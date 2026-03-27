@@ -42,9 +42,7 @@ def get_snp_info(rs_id):
         "id": data.get("name", rs_id),
         "chr": primary.get("seq_region_name"),
         "position": primary.get("start"),
-        "alleles": data.get("mappings", [{}])[0]
-        .get("allele_string", "")
-        .split("/"),
+        "alleles": primary.get("allele_string", "").split("/"),
         "strand": primary.get("strand"),
         "mappings": mappings,
     }
