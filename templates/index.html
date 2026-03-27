@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TargetSNAP – SNP-aware miRNA Target Prediction</title>
+  <link rel="stylesheet" href="/static/css/style.css" />
+</head>
+<body>
+  <header>
+    <h1>TargetSNAP</h1>
+    <p class="subtitle">SNP-aware miRNA Target Prediction via Context++ Score</p>
+  </header>
+
+  <main>
+    <!-- Step 1: Search SNP -->
+    <section id="search-section" class="card">
+      <h2>1&ensp;Enter dbSNP rs&nbsp;ID</h2>
+      <form id="snp-form">
+        <input
+          type="text"
+          id="rs-input"
+          placeholder="e.g. rs11552978"
+          autocomplete="off"
+          required
+        />
+        <button type="submit" id="search-btn">Search</button>
+      </form>
+      <div id="snp-info" class="hidden"></div>
+      <div id="search-error" class="error hidden"></div>
+    </section>
+
+    <!-- Step 2: Select gene / transcript -->
+    <section id="gene-section" class="card hidden">
+      <h2>2&ensp;Select Gene / Transcript</h2>
+      <p class="hint">Genes whose 3&prime;UTR overlaps the SNP are listed below.</p>
+      <ul id="gene-list"></ul>
+      <div id="gene-error" class="error hidden"></div>
+    </section>
+
+    <!-- Step 3: Results -->
+    <section id="results-section" class="card hidden">
+      <h2>3&ensp;miRNA Gain / Loss of Function</h2>
+      <div id="results-meta"></div>
+
+      <div class="results-group" id="lof-group">
+        <h3>Loss of Function <span class="badge lof" id="lof-count">0</span></h3>
+        <div id="lof-list" class="mirna-list"></div>
+      </div>
+
+      <div class="results-group" id="gof-group">
+        <h3>Gain of Function <span class="badge gof" id="gof-count">0</span></h3>
+        <div id="gof-list" class="mirna-list"></div>
+      </div>
+
+      <div class="results-group" id="unchanged-group">
+        <h3>Unchanged <span class="badge unchanged" id="unchanged-count">0</span></h3>
+        <div id="unchanged-list" class="mirna-list"></div>
+      </div>
+
+      <div id="results-error" class="error hidden"></div>
+    </section>
+
+    <!-- Loading overlay -->
+    <div id="loading" class="hidden">
+      <div class="spinner"></div>
+      <p>Running TargetScan…</p>
+    </div>
+  </main>
+
+  <footer>
+    <p>TargetSNAP &bull; Context++ scores computed via <a href="http://www.targetscan.org" target="_blank" rel="noopener">TargetScan&nbsp;7.0</a></p>
+  </footer>
+
+  <script src="/static/js/main.js"></script>
+</body>
+</html>
