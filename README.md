@@ -49,7 +49,8 @@ pip install -r requirements.txt
 #    Replace data/miR_Family_Info.txt with the complete file from TargetScan.
 
 # 5. Run the application
-python app.py
+FLASK_DEBUG=1 python app.py   # debug mode (development only)
+python app.py                 # production mode
 ```
 
 Open **http://localhost:5000** in your browser.
