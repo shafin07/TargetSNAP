@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>TargetSNAP – Results for {{ result.rsid }}</title>
+  <link
+    href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css"
+    rel="stylesheet"
+  />
+  <style>
+    body { background: #f4f6fb; }
+
+    /* ── topbar ─────────────────────────────────────── */
+    .topbar {
+      background: linear-gradient(135deg, #4e54c8 0%, #8f94fb 100%);
+      color: #fff;
+      padding: .85rem 1rem;
+    }
+    .topbar a { color: #fff; text-decoration: none; font-weight: 600; }
+
+    /* ── sequence display ─────────────────────────────── */
+    .seq-block {
+      font-family: "Courier New", monospace;
+      font-size: .88rem;
+      letter-spacing: .04em;
+      word-break: break-all;
+      white-space: normal;
+      line-height: 1.9;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      padding: 1rem 1.1rem;
+      border-radius: .5rem;
+    }
+    .highlight-snp {
+      background: #f9e000;
+      color: #000;
+      border-radius: 2px;
+      padding: 0 1px;
+      font-weight: bold;
+    }
+    .highlight-match {
+      background: #3d7eff;
+      color: #fff;
+      border-radius: 2px;
+      padding: 0 1px;
+    }
+    .highlight-snp-match {
+      background: #ff7700;
+      color: #fff;
+      border-radius: 2px;
+      padding: 0 1px;
+      font-weight: bold;
+    }
+
+    /* ── LOF / GOF colours ──────────────────────────────── */
+    .lof-header { background: #fff0f0; border-left: 4px solid #dc3545; }
+    .gof-header { background: #f0fff4; border-left: 4px solid #198754; }
+
+    /* ── site-type badges ─────────────────────────────── */
+    .badge-8mer    { background-color: #6f42c1; }
+    .badge-7mer-m8 { background-color: #0d6efd; }
+    .badge-7mer-A1 { background-color: #0dcaf0; color: #000 !important; }
+    .badge-6mer    { background-color: #6c757d; }
+  </style>
+</head>
+<body>
+
+<!-- ── Top bar ───────────────────────────────────────────────── -->
+<div class="topbar d-flex align-items-center px-4 gap-3">
+  <a href="/">🎯 TargetSNAP</a>
+  <span class="opacity-75">›</span>
+  <span>Results for <strong>{{ result.rsid }}</strong></span>
+</div>
+
+<div class="container py-4">
+
+  <!-- ── Error ──────────────────────────────────────────────── -->
+  {% if result.error %}
+  <div class="alert alert-danger">
+    <strong>Error:</strong> {{ result.error }}
+    <a href="/" class="btn btn-outline-danger btn-sm ms-3">← Try again</a>
+  </div>
+
+  {% else %}
+
+  <!-- ── SNP Summary card ───────────────────────────────────── -->
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-body">
+      <div class="row align-items-center gy-2">
+        <div class="col-auto">
+          <span class="display-6 fw-bold text-primary">{{ result.rsid }}</span>
+        </div>
+        <div class="col">
+          <div class="d-flex flex-wrap gap-2">
+            <span class="badge bg-secondary">chr{{ result.chromosome }}:{{ result.position }}</span>
+            <span class="badge bg-dark">
+              REF: {{ result.ref }} &nbsp;/&nbsp; ALT: {{ result.alt | join(", ") }}
+            </span>
+            {% set csq = result.consequence | replace("_", " ") %}
+            {% if "utr" in result.consequence %}
+              <span class="badge bg-warning text-dark">{{ csq }}</span>
+            {% elif "coding" in result.consequence or "missense" in result.consequence %}
+              <span class="badge bg-danger">{{ csq }}</span>
+            {% else %}
+              <span class="badge bg-info text-dark">{{ csq }}</span>
+            {% endif %}
+          </div>
+        </div>
+        <div class="col-auto">
+          <a href="/" class="btn btn-outline-secondary btn-sm">← New search</a>
+        </div>
+      </div>
+
+      {% if result.genes %}
+      <hr class="my-2" />
+      <small class="text-muted">
+        Overlapping genes:&nbsp;
+        {% for g in result.genes %}
+          <strong>{{ g.name }}</strong>
+          <span class="text-muted">({{ g.strand }} strand, {{ g.biotype }})</span>{% if not loop.last %}, {% endif %}
+        {% endfor %}
+      </small>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- ── Consequence note ──────────────────────────────────── -->
+  {% if "3_prime_utr" not in result.consequence %}
+  <div class="alert alert-warning d-flex gap-2 align-items-start">
+    <span>⚠️</span>
+    <div>
+      <strong>Note:</strong> The most severe annotated consequence for
+      {{ result.rsid }} is <em>{{ result.consequence | replace("_"," ") }}</em>,
+      not a 3′ UTR variant. The miRNA seed-match analysis is still performed
+      on the ±{{ window }} nt genomic window but biological relevance may be limited.
+    </div>
+  </div>
+  {% endif %}
+
+  <!-- ── Per-strand analyses ─────────────────────────────────── -->
+  {% if not result.analyses %}
+  <div class="alert alert-info">No analysis could be performed for this variant.</div>
+  {% endif %}
+
+  {% for analysis in result.analyses %}
+  <div class="card mb-4 shadow-sm border-0">
+    <div class="card-header bg-white border-bottom">
+      <strong>{{ analysis.strand }} strand analysis</strong>
+      <span class="ms-2 text-muted small">
+        (REF allele in context: <code>{{ analysis.ref_allele }}</code> →
+         ALT allele: <code>{{ analysis.alt_allele }}</code>)
+      </span>
+      {% if analysis.seq_mismatch %}
+      <span class="badge bg-warning text-dark ms-2">
+        ⚠ Sequence mismatch – strand orientation may differ from allele report
+      </span>
+      {% endif %}
+    </div>
+    <div class="card-body">
+
+      <!-- Summary badges -->
+      <div class="d-flex flex-wrap gap-2 mb-3">
+        {% if analysis.lof %}
+        <span class="badge bg-danger fs-6">
+          🔴 {{ analysis.lof | length }} LOF site{{ 's' if analysis.lof | length != 1 }}
+        </span>
+        {% else %}
+        <span class="badge bg-secondary">No LOF sites</span>
+        {% endif %}
+
+        {% if analysis.gof %}
+        <span class="badge bg-success fs-6">
+          🟢 {{ analysis.gof | length }} GOF site{{ 's' if analysis.gof | length != 1 }}
+        </span>
+        {% else %}
+        <span class="badge bg-secondary">No GOF sites</span>
+        {% endif %}
+
+        <span class="badge bg-light text-dark border">
+          {{ analysis.neutral_count }} unchanged site{{ 's' if analysis.neutral_count != 1 }}
+        </span>
+      </div>
+
+      <!-- ─ LOF table ─ -->
+      {% if analysis.lof %}
+      <div class="p-3 mb-3 rounded lof-header">
+        <h6 class="text-danger mb-2">🔴 Loss-of-Function (LOF) – miRNA target sites destroyed by the ALT allele</h6>
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th>miRNA</th>
+              <th>Site type</th>
+              <th>Seed motif (5′→3′)</th>
+              <th>Position in window</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in analysis.lof %}
+            <tr>
+              <td><code>{{ m.mirna }}</code></td>
+              <td>
+                <span class="badge badge-{{ m.site_type | replace(' ','') }}">{{ m.site_type }}</span>
+              </td>
+              <td><code class="text-danger">{{ m.seed }}</code></td>
+              <td>{{ m.start }}–{{ m.end - 1 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      <!-- ─ GOF table ─ -->
+      {% if analysis.gof %}
+      <div class="p-3 mb-3 rounded gof-header">
+        <h6 class="text-success mb-2">🟢 Gain-of-Function (GOF) – new miRNA target sites created by the ALT allele</h6>
+        <table class="table table-sm table-hover mb-0">
+          <thead>
+            <tr>
+              <th>miRNA</th>
+              <th>Site type</th>
+              <th>Seed motif (5′→3′)</th>
+              <th>Position in window</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for m in analysis.gof %}
+            <tr>
+              <td><code>{{ m.mirna }}</code></td>
+              <td>
+                <span class="badge badge-{{ m.site_type | replace(' ','') }}">{{ m.site_type }}</span>
+              </td>
+              <td><code class="text-success">{{ m.seed }}</code></td>
+              <td>{{ m.start }}–{{ m.end - 1 }}</td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% endif %}
+
+      <!-- ─ Sequence display ─ -->
+      <div class="accordion" id="seqAccordion{{ loop.index }}">
+
+        <!-- Reference sequence -->
+        <div class="accordion-item border-0 mb-2">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-light" type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#refSeq{{ loop.index }}">
+              Reference sequence window
+              <small class="ms-2 text-muted">
+                (SNP <span class="highlight-snp px-1">yellow</span>,
+                 LOF site <span class="highlight-match px-1 text-white"
+                                style="background:#3d7eff">blue</span>)
+              </small>
+            </button>
+          </h2>
+          <div id="refSeq{{ loop.index }}" class="accordion-collapse collapse">
+            <div class="accordion-body p-0">
+              <div class="seq-block">{{ analysis | annotate_ref }}</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Alternate sequence -->
+        <div class="accordion-item border-0">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed bg-light" type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#altSeq{{ loop.index }}">
+              Alternate sequence window
+              <small class="ms-2 text-muted">
+                (SNP <span class="highlight-snp px-1">yellow</span>,
+                 GOF site <span class="highlight-match px-1 text-white"
+                                style="background:#3d7eff">blue</span>)
+              </small>
+            </button>
+          </h2>
+          <div id="altSeq{{ loop.index }}" class="accordion-collapse collapse">
+            <div class="accordion-body p-0">
+              <div class="seq-block">{{ analysis | annotate_alt }}</div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /accordion -->
+    </div><!-- /card-body -->
+  </div><!-- /card -->
+  {% endfor %}
+
+  <!-- ── No changes summary ─────────────────────────────────── -->
+  {% set ns = namespace(total_lof=0, total_gof=0) %}
+  {% for a in result.analyses %}
+    {% set ns.total_lof = ns.total_lof + (a.lof | length) %}
+    {% set ns.total_gof = ns.total_gof + (a.gof | length) %}
+  {% endfor %}
+  {% if result.analyses and ns.total_lof == 0 and ns.total_gof == 0 %}
+  <div class="alert alert-info">
+    <strong>No miRNA seed-match changes detected</strong> within ±{{ filter_distance }} nt of
+    {{ result.rsid }} for the {{ result.analyses | length }} strand orientation(s) analysed.
+    This variant does not appear to create or destroy any of the
+    {{ result.analyses[0].neutral_count }} seed-match sites in the curated miRNA set.
+  </div>
+  {% endif %}
+
+  {% endif %}{# end error/else #}
+
+</div><!-- /container -->
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
