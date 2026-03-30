@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TargetSNAP Web - SNP Analysis</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        header {
+            background: white;
+            padding: 30px 40px;
+            border-radius: 10px 10px 0 0;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+        }
+        
+        header h1 {
+            color: #667eea;
+            margin-bottom: 5px;
+            font-size: 2.2em;
+        }
+        
+        header p {
+            color: #999;
+            font-size: 0.95em;
+        }
+        
+        main {
+            background: white;
+            padding: 40px;
+            margin-top: 20px;
+            border-radius: 0 0 10px 10px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+        }
+        
+        .search-section {
+            margin-bottom: 40px;
+        }
+
+        .top-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            flex-wrap: wrap;
+            margin-bottom: 12px;
+        }
+
+        select {
+            padding: 10px 12px;
+            border: 1px solid #cbd5e1;
+            border-radius: 5px;
+            background: #fff;
+            color: #1f2937;
+            min-width: 200px;
+        }
+
+
+        
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        input[type="text"] {
+            flex: 1;
+            padding: 15px 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        input[type="text"]:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        button {
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            border-radius: 5px;
+            font-size: 1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+            color: #667eea;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .error {
+            background: #fee;
+            border-left: 4px solid #e74c3c;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            display: none;
+            color: #c0392b;
+            position: relative;
+            padding-right: 40px;
+        }
+
+        .error-close {
+            position: absolute;
+            right: 10px;
+            top: 8px;
+            border: none;
+            background: transparent;
+            color: #c0392b;
+            font-size: 20px;
+            line-height: 1;
+            cursor: pointer;
+            padding: 0;
+        }
+        
+        .results-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-top: 30px;
+        }
+        
+        .panel {
+            background: #f9f9f9;
+            border: 1px solid #e0e0e0;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        
+        .panel h3 {
+            color: #667eea;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .gene-list, .transcript-list {
+            list-style: none;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .gene-item, .transcript-item {
+            padding: 12px;
+            margin-bottom: 8px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .gene-item:hover, .transcript-item:hover {
+            border-color: #667eea;
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
+            transform: translateX(5px);
+        }
+        
+        .gene-item.selected, .transcript-item.selected {
+            background: #e8eef7;
+            border-color: #667eea;
+            font-weight: bold;
+        }
+        
+        .gene-name {
+            font-weight: bold;
+            color: #333;
+        }
+        
+        .gene-meta {
+            font-size: 0.9em;
+            color: #999;
+            margin-top: 5px;
+        }
+        
+        .results-section {
+            background: white;
+            border: 2px solid #667eea;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .eqtl-section {
+            margin-top: 24px;
+            padding: 16px;
+            border: 1px solid #c7d2fe;
+            border-radius: 8px;
+            background: #f8faff;
+            display: none;
+        }
+
+        .eqtl-summary {
+            margin-bottom: 12px;
+            color: #1e3a8a;
+            font-size: 14px;
+        }
+
+        .eqtl-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+
+        .eqtl-table th,
+        .eqtl-table td {
+            border: 1px solid #dbeafe;
+            padding: 6px 8px;
+            text-align: left;
+        }
+
+        .eqtl-table th {
+            background: #eef2ff;
+            color: #312e81;
+        }
+        
+        .results-section h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        
+        .effect-section {
+            margin-bottom: 30px;
+        }
+        
+        .effect-title {
+            font-size: 1.2em;
+            font-weight: bold;
+            padding: 10px;
+            border-radius: 5px;
+            margin-bottom: 15px;
+        }
+        
+        .loss-title {
+            background: #ffebee;
+            color: #c62828;
+            border-left: 4px solid #c62828;
+        }
+        
+        .gain-title {
+            background: #e8f5e9;
+            color: #2e7d32;
+            border-left: 4px solid #2e7d32;
+        }
+
+        .neutral-title {
+            background: #eff6ff;
+            color: #1e3a8a;
+            border-left: 4px solid #2563eb;
+        }
+        
+        .mirna-result {
+            padding: 12px;
+            margin-bottom: 10px;
+            background: white;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            display: block;
+        }
+
+        .mirna-dropdown {
+            border: 1px solid #d6dcf6;
+            border-radius: 8px;
+            background: #fff;
+            margin-bottom: 10px;
+            overflow: hidden;
+        }
+
+        .mirna-summary {
+            list-style: none;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            padding: 12px 14px;
+            background: #f8faff;
+            border-bottom: 1px solid transparent;
+        }
+
+        .mirna-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .mirna-dropdown[open] .mirna-summary {
+            border-bottom-color: #d6dcf6;
+            background: #eef2ff;
+        }
+
+        .mirna-main {
+            font-weight: 700;
+            color: #1f2937;
+        }
+
+        .mirna-score {
+            font-weight: 700;
+            color: #3949ab;
+            font-size: 14px;
+        }
+
+        .mirna-details {
+            padding: 12px 14px 14px;
+        }
+
+        .mirna-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .binding-block {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+            background: #f8f9ff;
+            border: 1px solid #e1e6ff;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .binding-columns {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 10px;
+        }
+
+        .pairing-view {
+            margin-top: 8px;
+            padding: 8px;
+            border-radius: 4px;
+            background: #ffffff;
+            border: 1px dashed #cfd8ff;
+            font-family: Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.35;
+            white-space: pre;
+            overflow-x: auto;
+        }
+
+        .results-controls {
+            margin: 8px 0 18px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #334155;
+            font-size: 14px;
+        }
+
+        .results-controls input {
+            transform: scale(1.1);
+        }
+
+        .binding-title {
+            font-weight: 700;
+            color: #3949ab;
+            margin-bottom: 4px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 12px;
+        }
+        
+        .score-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 3px;
+            font-weight: bold;
+            font-size: 0.85em;
+        }
+
+        .meta-badge {
+            display: inline-block;
+            margin-left: 8px;
+            padding: 3px 8px;
+            border-radius: 12px;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        
+        .empty-msg {
+            text-align: center;
+            padding: 20px;
+            color: #999;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            background: #f0f4ff;
+            padding: 15px;
+            border-radius: 5px;
+            text-align: center;
+            border-left: 4px solid #667eea;
+        }
+        
+        .stat-value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #667eea;
+        }
+
+        @media (max-width: 960px) {
+            .binding-columns {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🧬 TargetSNAP Web Interface</h1>
+            <p>SNP Impact Analysis on Gene-miRNA Interactions using Local TargetScan</p>
+        </header>
+        
+        <main>
+            <div class="search-section">
+                <div class="search-box">
+                    <input 
+                        type="text" 
+                        id="rsInput" 
+                        placeholder="Enter rs ID (e.g., rs12345678)"
+                        autocomplete="off"
+                    >
+                    <button onclick="searchSNP()">Search SNP</button>
+                </div>
+                <div class="error" id="errorMsg"></div>
+                <div class="loading" id="loading">
+                    <div class="spinner"></div>
+                    <p>Processing...</p>
+                </div>
+            </div>
+            
+            <div class="results-grid" id="resultsGrid" style="display: none;">
+                <div class="panel">
+                    <h3>📍 Mapped Genes</h3>
+                    <ul class="gene-list" id="geneList"></ul>
+                </div>
+                
+                <div class="panel">
+                    <h3>🧬 Gene Transcripts</h3>
+                    <ul class="transcript-list" id="transcriptList"></ul>
+                </div>
+            </div>
+            
+            <div class="results-section" id="resultsSection">
+                <h2>📊 miRNA Targeting Analysis Results</h2>
+
+                <div class="results-controls">
+                    <input type="checkbox" id="changedOnlyToggle">
+                    <label for="changedOnlyToggle">Show only changed Ref/Alt bindings</label>
+                </div>
+                
+                <div class="stats">
+                    <div class="stat-box">
+                        <div>Ref Targets</div>
+                        <div class="stat-value" id="refTargetsCount">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div>Alt Targets</div>
+                        <div class="stat-value" id="mutTargetsCount">-</div>
+                    </div>
+                    <div class="stat-box">
+                        <div>Total Changes</div>
+                        <div class="stat-value" id="totalChanges">-</div>
+                    </div>
+                </div>
+                
+                <div class="effect-section">
+                    <div class="effect-title loss-title">❌ Loss of Function (miRNAs)</div>
+                    <div id="lofContainer"></div>
+                </div>
+                
+                <div class="effect-section">
+                    <div class="effect-title gain-title">✅ Gain of Function (miRNAs)</div>
+                    <div id="gofContainer"></div>
+                </div>
+
+                <div class="effect-section">
+                    <div class="effect-title neutral-title">ℹ️ Stable / Neutral miRNAs</div>
+                    <div id="neutralContainer"></div>
+                </div>
+
+                <div class="eqtl-section" id="eqtlSection">
+                    <h3 style="color:#1e3a8a; margin-bottom: 10px;">eQTL / DAE Evidence (GTEx)</h3>
+                    <div class="eqtl-summary" id="eqtlSummary"></div>
+                    <div id="eqtlTableContainer"></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        let currentSNP = null;
+        let currentGene = null;
+        let currentComparisonData = null;
+        
+        async function searchSNP() {
+            const rsId = document.getElementById('rsInput').value.trim();
+            
+            if (!rsId) {
+                showError('Please enter an rs ID');
+                return;
+            }
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/search-rs', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rs_id: rsId })
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    showError(data.error || 'Error searching SNP');
+                    showLoading(false);
+                    return;
+                }
+                
+                currentSNP = data;
+                displayGenes(data.genes);
+                document.getElementById('resultsGrid').style.display = 'grid';
+                
+            } catch (error) {
+                showError('Network error: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function displayGenes(genes) {
+            const list = document.getElementById('geneList');
+            list.innerHTML = '';
+            
+            genes.forEach((gene, index) => {
+                const item = document.createElement('li');
+                item.className = 'gene-item';
+                if (index === 0) item.classList.add('selected');
+                
+                item.innerHTML = `
+                    <div class="gene-name">${gene.gene_name}</div>
+                    <div class="gene-meta">
+                        Chr${gene.chromosome}:${gene.position.toLocaleString()}<br/>
+                        ${gene.ref_allele_display || gene.ref_allele}→${gene.alt_allele_display || gene.alt_allele} (${gene.strand} strand)
+                        ${gene.strand === '-' ? `<br/>genomic: ${gene.ref_allele_genomic || gene.ref_allele}→${gene.alt_allele_genomic || gene.alt_allele}` : ''}
+                    </div>
+                `;
+                
+                item.onclick = () => selectGene(gene, item);
+                
+                if (index === 0) selectGene(gene, item);
+                
+                list.appendChild(item);
+            });
+        }
+        
+        async function selectGene(gene, element) {
+            document.querySelectorAll('.gene-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            currentGene = gene;
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/gene-transcripts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gene_id: gene.gene_id })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayTranscripts(data.transcripts);
+                } else {
+                    showError(data.error);
+                }
+                
+            } catch (error) {
+                showError('Error: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function displayTranscripts(transcripts) {
+            const list = document.getElementById('transcriptList');
+            list.innerHTML = '';
+            
+            transcripts.forEach((transcript, index) => {
+                const item = document.createElement('li');
+                item.className = 'transcript-item';
+                if (index === 0) item.classList.add('selected');
+                
+                item.innerHTML = `
+                    <div class="gene-name">${transcript.transcript_name}</div>
+                    <div class="gene-meta">
+                        ${transcript.transcript_id}<br/>
+                        Strand: ${transcript.strand} | 3'UTR: ${transcript.utr_length ? transcript.utr_length + 'bp' : 'NA'}
+                    </div>
+                `;
+                
+                item.onclick = () => selectTranscript(transcript, item);
+                
+                if (index === 0) selectTranscript(transcript, item);
+                
+                list.appendChild(item);
+            });
+        }
+        
+        async function selectTranscript(transcript, element) {
+            document.querySelectorAll('.transcript-item').forEach(el => el.classList.remove('selected'));
+            element.classList.add('selected');
+            
+            showLoading(true);
+            
+            try {
+                const response = await fetch('/api/compare-alleles', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        rs_id: currentSNP.rs_id,
+                        gene_id: currentGene.gene_id,
+                        transcript_id: transcript.transcript_id
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok) {
+                    displayResults(data);
+                } else {
+                    showError(data.error);
+                }
+                
+            } catch (error) {
+                showError('Error: ' + error.message);
+            } finally {
+                showLoading(false);
+            }
+        }
+        
+        function displayResults(data) {
+            currentComparisonData = data;
+            document.getElementById('resultsSection').style.display = 'block';
+            
+            document.getElementById('refTargetsCount').textContent = data.total_ref_targets;
+            document.getElementById('mutTargetsCount').textContent = data.total_mut_targets;
+            document.getElementById('totalChanges').textContent = 
+                data.loss_of_function.length + data.gain_of_function.length;
+
+            renderMiRNASections();
+            
+            document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
+        }
+
+
+
+
+
+
+
+        function renderMiRNASections() {
+            if (!currentComparisonData) return;
+            const changedOnly = document.getElementById('changedOnlyToggle').checked;
+
+            displayMiRNAList(
+                currentComparisonData.loss_of_function,
+                'lofContainer',
+                changedOnly ? 'No changed loss-of-function bindings' : 'No loss-of-function',
+                changedOnly
+            );
+
+            displayMiRNAList(
+                currentComparisonData.gain_of_function,
+                'gofContainer',
+                changedOnly ? 'No changed gain-of-function bindings' : 'No gain-of-function',
+                changedOnly
+            );
+
+            // Always show neutral/stable bindings so users still see miRNAs
+            // even when there are no LOF/GOF changes.
+            displayMiRNAList(
+                currentComparisonData.neutral,
+                'neutralContainer',
+                'No neutral/stable miRNAs found',
+                false
+            );
+        }
+        
+        function displayMiRNAList(mirnas, containerId, emptyMsg, changedOnly) {
+            const container = document.getElementById(containerId);
+            
+            if (!mirnas || mirnas.length === 0) {
+                container.innerHTML = `<div class="empty-msg">${emptyMsg}</div>`;
+                return;
+            }
+            
+            container.innerHTML = '';
+            let rendered = 0;
+            
+            mirnas.forEach(mirna => {
+                if (changedOnly && !hasBindingDifference(mirna)) {
+                    return;
+                }
+
+                const score = Number(mirna.context_score || 0).toFixed(3);
+                const item = document.createElement('details');
+                item.className = 'mirna-dropdown';
+                item.innerHTML = `
+                    <summary class="mirna-summary">
+                        <span class="mirna-main">${escapeHtml(mirna.mirna_id || 'Unknown miRNA')}</span>
+                        <span class="mirna-score">Score: ${score}</span>
+                    </summary>
+                    <div class="mirna-details">
+                        ${formatMirnaDetails(mirna)}
+                    </div>
+                `;
+
+                container.appendChild(item);
+                rendered += 1;
+            });
+
+            if (rendered === 0) {
+                container.innerHTML = `<div class="empty-msg">${emptyMsg}</div>`;
+            }
+        }
+
+        function formatMirnaDetails(mirna) {
+            const refScore = Number(mirna.ref_score || 0).toFixed(3);
+            const mutScore = Number(mirna.mut_score || 0).toFixed(3);
+            const delta = Math.abs(Number(mirna.score_change || 0)).toFixed(3);
+            const bindingColumns = formatBindingComparison(mirna);
+
+            return `
+                <div class="mirna-header">
+                    <div>
+                        <strong>${escapeHtml(mirna.mirna_id || '')}</strong>
+                        <span class="meta-badge">${escapeHtml(mirna.evidence_level || 'low')} evidence</span>
+                        <span class="meta-badge">Priority ${Number(mirna.priority_score || 0).toFixed(1)}</span>
+                        <span class="meta-badge">${escapeHtml(mirna.site_type || 'NA')}</span>
+                    </div>
+                    <div>
+                        Ref: <span class="score-badge">${refScore}</span>
+                        Alt: <span class="score-badge">${mutScore}</span>
+                        Δ: <span class="score-badge">${delta}</span>
+                    </div>
+                </div>
+                ${bindingColumns}
+            `;
+        }
+
+        function formatBindingComparison(mirna) {
+            const ref = {
+                siteType: mirna.ref_site_type || 'NA',
+                mirnaSeq: mirna.ref_mature_mirna_sequence || '',
+                utrRegion: mirna.ref_utr_region || '',
+                pairing: mirna.ref_pairing || ''
+            };
+            const alt = {
+                siteType: mirna.alt_site_type || 'NA',
+                mirnaSeq: mirna.alt_mature_mirna_sequence || '',
+                utrRegion: mirna.alt_utr_region || '',
+                pairing: mirna.alt_pairing || ''
+            };
+
+            const hasContent = Boolean(
+                ref.siteType.trim() || ref.mirnaSeq.trim() || ref.utrRegion.trim() || ref.pairing.trim() ||
+                alt.siteType.trim() || alt.mirnaSeq.trim() || alt.utrRegion.trim() || alt.pairing.trim()
+            );
+
+            if (!hasContent) {
+                return `<div class="binding-block"><div class="binding-title">Binding</div>No site details returned by TargetScan for this allele.</div>`;
+            }
+
+            return `
+                <div class="binding-columns">
+                    <div class="binding-block">
+                        <div class="binding-title">Ref binding</div>
+                        SiteType: ${escapeHtml(ref.siteType)}
+                        <div class="pairing-view">${buildPairingDiffHtml(ref, alt)}</div>
+                    </div>
+                    <div class="binding-block">
+                        <div class="binding-title">Alt binding</div>
+                        SiteType: ${escapeHtml(alt.siteType)}
+                        <div class="pairing-view">${buildPairingDiffHtml(alt, ref)}</div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function buildPairingDiffHtml(primary, other) {
+            const pMirna = normalizeForCompare(primary.mirnaSeq);
+            const pPair = normalizeForCompare(primary.pairing);
+            const pUtr = normalizeForCompare(primary.utrRegion);
+
+            const oMirna = normalizeForCompare(other.mirnaSeq);
+            const oPair = normalizeForCompare(other.pairing);
+            const oUtr = normalizeForCompare(other.utrRegion);
+
+            const line1 = diffLineHtml('miRNA 3\' ', pMirna || 'NA', oMirna || 'NA');
+            const line2 = diffLineHtml('         ', pPair || 'NA', oPair || 'NA');
+            const line3 = diffLineHtml('UTR   5\' ', pUtr || 'NA', oUtr || 'NA');
+
+            return `${line1}<br>${line2}<br>${line3}`;
+        }
+
+        function diffLineHtml(prefix, a, b) {
+            return `${escapeHtml(prefix)}${escapeHtml(a)}`;
+        }
+
+        function hasBindingDifference(mirna) {
+            const refSite = normalizeForCompare(mirna.ref_site_type || '');
+            const altSite = normalizeForCompare(mirna.alt_site_type || '');
+            const refMiR = normalizeForCompare(mirna.ref_mature_mirna_sequence || '');
+            const altMiR = normalizeForCompare(mirna.alt_mature_mirna_sequence || '');
+            const refPair = normalizeForCompare(mirna.ref_pairing || '');
+            const altPair = normalizeForCompare(mirna.alt_pairing || '');
+            const refUtr = normalizeForCompare(mirna.ref_utr_region || '');
+            const altUtr = normalizeForCompare(mirna.alt_utr_region || '');
+
+            return refSite !== altSite || refMiR !== altMiR || refPair !== altPair || refUtr !== altUtr;
+        }
+
+        function normalizeForCompare(value) {
+            return String(value || '').replace(/\r/g, '');
+        }
+
+        function escapeHtml(text) {
+            return String(text)
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#39;');
+        }
+        
+        function showError(msg) {
+            const el = document.getElementById('errorMsg');
+            el.innerHTML = `${escapeHtml(msg)}<button class="error-close" type="button" onclick="clearError()" title="Dismiss">&times;</button>`;
+            el.style.display = 'block';
+        }
+
+        function clearError() {
+            const el = document.getElementById('errorMsg');
+            el.innerHTML = '';
+            el.style.display = 'none';
+        }
+        
+        function showLoading(show) {
+            document.getElementById('loading').style.display = show ? 'block' : 'none';
+            if (show) {
+                clearError();
+            }
+        }
+
+
+
+
+        
+        document.getElementById('rsInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') searchSNP();
+        });
+
+        document.getElementById('changedOnlyToggle').addEventListener('change', function() {
+            renderMiRNASections();
+        });
+
+
+    </script>
+</body>
+</html>

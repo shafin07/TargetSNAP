@@ -1,0 +1,24 @@
+{
+  "rs12345678": [
+    {
+      "gene_id": "ENSG00000139618",
+      "gene_name": "BRCA2",
+      "chromosome": "13",
+      "position": 32889611,
+      "ref_allele": "A",
+      "alt_allele": "G",
+      "strand": "+"
+    }
+  ],
+  "rs61733396": [
+    {
+      "gene_id": "ENSG00000175623",
+      "gene_name": "CDKN2A",
+      "chromosome": "9",
+      "position": 21971153,
+      "ref_allele": "G",
+      "alt_allele": "T",
+      "strand": "-"
+    }
+  ]
+}

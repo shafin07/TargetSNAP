@@ -1,0 +1,24 @@
+{
+  "ENSG00000139618": [
+    {
+      "transcript_id": "ENST00000380152",
+      "transcript_name": "BRCA2-001",
+      "strand": "+",
+      "length": 10254
+    },
+    {
+      "transcript_id": "ENST00000528762",
+      "transcript_name": "BRCA2-002",
+      "strand": "+",
+      "length": 9756
+    }
+  ],
+  "ENSG00000175623": [
+    {
+      "transcript_id": "ENST00000498026",
+      "transcript_name": "CDKN2A-001",
+      "strand": "-",
+      "length": 1695
+    }
+  ]
+}

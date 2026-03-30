@@ -1,0 +1,11 @@
+feature	intercept	slope
+8mer	-0.103	-0.012
+7mer-m8	-0.057	-0.009
+7mer-A1	-0.045	-0.008
+6mer	-0.022	-0.005
+local_AU	0	-0.051
+min_dist	0	-0.038
+TA	0	-0.019
+sps	0	-0.02
+pc	0	-0.098
+3p_supp	0	-0.05
