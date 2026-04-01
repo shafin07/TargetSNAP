@@ -719,12 +719,37 @@ class TargetScanLocalRunner:
         self.prediction_cache: Dict[str, List[Dict]] = {}
         self.prediction_cache_order: List[str] = []
         self.max_prediction_cache = 256
+        self.disk_cache_dir = os.path.join(self.base_dir, "targetsnap_cache")
+        os.makedirs(self.disk_cache_dir, exist_ok=True)
+        self._load_disk_cache()
         self.verbose_targetscan_logs = str(os.getenv("TARGETSNAP_VERBOSE_LOGS", "0")).strip().lower() in {
             "1",
             "true",
             "yes",
             "on",
         }
+
+    def _load_disk_cache(self):
+        """Load previously computed predictions from disk into memory cache."""
+        try:
+            for fname in os.listdir(self.disk_cache_dir):
+                if fname.endswith(".json"):
+                    cache_key = fname[:-5]
+                    fpath = os.path.join(self.disk_cache_dir, fname)
+                    with open(fpath, "r", encoding="utf-8") as f:
+                        self.prediction_cache[cache_key] = json.load(f)
+                    self.prediction_cache_order.append(cache_key)
+        except Exception:
+            pass
+
+    def _save_to_disk_cache(self, cache_key: str, targets: List[Dict]):
+        """Persist prediction results to disk for fast reload."""
+        try:
+            fpath = os.path.join(self.disk_cache_dir, f"{cache_key}.json")
+            with open(fpath, "w", encoding="utf-8") as f:
+                json.dump(targets, f)
+        except Exception:
+            pass
 
     def preflight_check(self) -> Dict:
         required_ts70 = ["targetscan_70.pl", "miR_Family_Info_human.txt"]
@@ -792,7 +817,7 @@ class TargetScanLocalRunner:
         end = min(seq_len, snp_index + window_radius + 1)
         return sequence[start:end]
 
-    def _run_subprocess(self, command: List[str], cwd: str, stdout_path: Optional[str] = None) -> Dict:
+    def _run_subprocess(self, command: List[str], cwd: str, stdout_path: Optional[str] = None, timeout: int = 180) -> Dict:
         exec_info = {
             "command": " ".join(command),
             "cwd": cwd,
@@ -802,13 +827,17 @@ class TargetScanLocalRunner:
             "success": False,
             "output_file": stdout_path,
         }
-        if stdout_path:
-            with open(stdout_path, "w", encoding="utf-8", newline="") as out_file:
-                result = subprocess.run(command, cwd=cwd, stdout=out_file, stderr=subprocess.PIPE, text=True)
-                exec_info["stdout"] = f"(written to {stdout_path})"
-        else:
-            result = subprocess.run(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            exec_info["stdout"] = (result.stdout or "")[:500]
+        try:
+            if stdout_path:
+                with open(stdout_path, "w", encoding="utf-8", newline="") as out_file:
+                    result = subprocess.run(command, cwd=cwd, stdout=out_file, stderr=subprocess.PIPE, text=True, timeout=timeout)
+                    exec_info["stdout"] = f"(written to {stdout_path})"
+            else:
+                result = subprocess.run(command, cwd=cwd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, timeout=timeout)
+                exec_info["stdout"] = (result.stdout or "")[:500]
+        except subprocess.TimeoutExpired as e:
+            exec_info["stderr"] = f"Process timed out after {timeout}s"
+            raise RuntimeError(f"TargetScan subprocess timed out after {timeout}s for command: {' '.join(command[:3])}...") from e
 
         exec_info["returncode"] = result.returncode
         exec_info["stderr"] = (result.stderr or "")[:500]
@@ -912,6 +941,69 @@ class TargetScanLocalRunner:
 
         return sorted(best.values(), key=lambda x: (bool(x.get("overlaps_snp")), x["context_score"]), reverse=True)
 
+    def _parse_seed_targets(self, targets_file: str, snp_position: Optional[int] = None) -> List[Dict]:
+        """Parse seed-only output from targetscan_70.pl (fallback when context++ times out)."""
+        if not os.path.exists(targets_file):
+            return []
+
+        best: Dict[str, Dict] = {}
+        snp_site_1based = None
+        if snp_position is not None:
+            try:
+                snp_site_1based = int(snp_position) + 1
+            except Exception:
+                snp_site_1based = None
+
+        with open(targets_file, "r", encoding="utf-8", errors="ignore") as f:
+            header = f.readline()
+            if not header:
+                return []
+            for line in f:
+                fields = line.rstrip("\n").split("\t")
+                if len(fields) < 9:
+                    continue
+                if fields[2].strip() != "9606":
+                    continue
+
+                mirna_id = fields[1].strip()
+                try:
+                    utr_start = int(fields[5].strip())
+                    utr_end = int(fields[6].strip())
+                except Exception:
+                    continue
+
+                overlaps_snp = False
+                if snp_site_1based is not None:
+                    overlaps_snp = utr_start <= snp_site_1based <= utr_end
+
+                prev = best.get(mirna_id)
+                should_replace = False
+                if prev is None:
+                    should_replace = True
+                else:
+                    prev_overlap = bool(prev.get("overlaps_snp"))
+                    if overlaps_snp and not prev_overlap:
+                        should_replace = True
+
+                if should_replace:
+                    best[mirna_id] = {
+                        "mirna_id": mirna_id,
+                        "context_score": 0.0,
+                        "raw_context_score": 0.0,
+                        "repression_level": "N/A (seed-only)",
+                        "site_type": fields[8].strip(),
+                        "utr_start": utr_start,
+                        "utr_end": utr_end,
+                        "utr_region": "",
+                        "pairing": "",
+                        "mature_mirna_sequence": "",
+                        "mirna_family": mirna_id,
+                        "overlaps_snp": overlaps_snp,
+                        "seed_only": True,
+                    }
+
+        return sorted(best.values(), key=lambda x: bool(x.get("overlaps_snp")), reverse=True)
+
     def _parse_context_scores_grouped(
         self,
         context_output_file: str,
@@ -988,6 +1080,96 @@ class TargetScanLocalRunner:
             out[transcript_key] = sorted(
                 best_map.values(),
                 key=lambda x: (bool(x.get("overlaps_snp")), x["context_score"]),
+                reverse=True,
+            )
+        return out
+
+    def _parse_seed_targets_grouped(
+        self,
+        targets_file: str,
+        snp_position_map: Optional[Dict[str, Optional[int]]] = None,
+    ) -> Dict[str, List[Dict]]:
+        """Parse seed-only output from targetscan_70.pl (fallback when context++ times out).
+
+        Columns: a_Gene_ID(0), miRNA_family_ID(1), species_ID(2), MSA_start(3),
+        MSA_end(4), UTR_start(5), UTR_end(6), Group_num(7), Site_type(8),
+        miRNA_in_this_species(9), Group_type(10), ...
+        """
+        if not os.path.exists(targets_file):
+            return {}
+
+        grouped_best: Dict[str, Dict[str, Dict]] = {}
+        with open(targets_file, "r", encoding="utf-8", errors="ignore") as f:
+            header = f.readline()
+            if not header:
+                return {}
+
+            for line in f:
+                fields = line.rstrip("\n").split("\t")
+                if len(fields) < 9:
+                    continue
+
+                transcript_key = fields[0].strip()
+                mirna_id = fields[1].strip()
+                species_id = fields[2].strip()
+                if species_id != "9606":
+                    continue
+
+                try:
+                    utr_start = int(fields[5].strip())
+                    utr_end = int(fields[6].strip())
+                except Exception:
+                    continue
+
+                site_type = fields[8].strip()
+
+                snp_site_1based = None
+                if snp_position_map and transcript_key in snp_position_map and snp_position_map[transcript_key] is not None:
+                    try:
+                        snp_site_1based = int(snp_position_map[transcript_key]) + 1
+                    except Exception:
+                        snp_site_1based = None
+
+                overlaps_snp = False
+                if snp_site_1based is not None:
+                    overlaps_snp = utr_start <= snp_site_1based <= utr_end
+
+                if transcript_key not in grouped_best:
+                    grouped_best[transcript_key] = {}
+
+                prev = grouped_best[transcript_key].get(mirna_id)
+                should_replace = False
+                if prev is None:
+                    should_replace = True
+                else:
+                    prev_overlap = bool(prev.get("overlaps_snp"))
+                    if overlaps_snp and not prev_overlap:
+                        should_replace = True
+                    elif overlaps_snp == prev_overlap:
+                        should_replace = False
+
+                if should_replace:
+                    grouped_best[transcript_key][mirna_id] = {
+                        "mirna_id": mirna_id,
+                        "context_score": 0.0,
+                        "raw_context_score": 0.0,
+                        "repression_level": "N/A (seed-only)",
+                        "site_type": site_type,
+                        "utr_start": utr_start,
+                        "utr_end": utr_end,
+                        "utr_region": "",
+                        "pairing": "",
+                        "mature_mirna_sequence": "",
+                        "mirna_family": mirna_id,
+                        "overlaps_snp": overlaps_snp,
+                        "seed_only": True,
+                    }
+
+        out: Dict[str, List[Dict]] = {}
+        for transcript_key, best_map in grouped_best.items():
+            out[transcript_key] = sorted(
+                best_map.values(),
+                key=lambda x: bool(x.get("overlaps_snp")),
                 reverse=True,
             )
         return out
@@ -1071,10 +1253,10 @@ class TargetScanLocalRunner:
 
             mir_family_file = os.path.join(self.targetscan70_dir, "miR_Family_Info_human.txt")
             ts_script = os.path.join(self.targetscan70_dir, "targetscan_70.pl")
-            self._run_subprocess([self.perl_executable, ts_script, mir_family_file, utr_file, output_targets], cwd=self.targetscan70_dir)
+            self._run_subprocess([self.perl_executable, ts_script, mir_family_file, utr_file, output_targets], cwd=self.targetscan70_dir, timeout=600)
 
             count_script = os.path.join(self.context_dir, "targetscan_count_8mers.pl")
-            self._run_subprocess([self.perl_executable, count_script, mir_family_file, orf_file], cwd=self.context_dir, stdout_path=orf_8mer_counts)
+            self._run_subprocess([self.perl_executable, count_script, mir_family_file, orf_file], cwd=self.context_dir, stdout_path=orf_8mer_counts, timeout=600)
 
             generated_lengths = os.path.join(self.context_dir, "ORF.lengths.txt")
             if os.path.exists(generated_lengths):
@@ -1087,19 +1269,27 @@ class TargetScanLocalRunner:
 
             context_script = os.path.join(self.context_dir, "targetscan_70_context_scores.pl")
             mir_context_file = os.path.join(self.context_dir, "miR_for_context_scores.txt")
-            self._run_subprocess(
-                [
-                    self.perl_executable,
-                    context_script,
-                    mir_context_file,
-                    utr_file,
-                    output_targets,
-                    orf_lengths,
-                    orf_8mer_counts,
-                    output_context_scores,
-                ],
-                cwd=self.context_dir,
-            )
+            context_scores_available = True
+            try:
+                self._run_subprocess(
+                    [
+                        self.perl_executable,
+                        context_script,
+                        mir_context_file,
+                        utr_file,
+                        output_targets,
+                        orf_lengths,
+                        orf_8mer_counts,
+                        output_context_scores,
+                    ],
+                    cwd=self.context_dir,
+                    timeout=120,
+                )
+            except RuntimeError as e:
+                if "timed out" in str(e).lower():
+                    context_scores_available = False
+                else:
+                    raise
 
             if self.verbose_targetscan_logs and os.path.exists(output_targets):
                 shutil.copy(output_targets, os.path.join(run_log_dir, "output_targets.txt"))
@@ -1110,7 +1300,10 @@ class TargetScanLocalRunner:
             for label, tx_key in transcript_key_map.items():
                 mapped_snp_positions[tx_key] = (snp_position_map or {}).get(label)
 
-            grouped = self._parse_context_scores_grouped(output_context_scores, snp_position_map=mapped_snp_positions)
+            if context_scores_available:
+                grouped = self._parse_context_scores_grouped(output_context_scores, snp_position_map=mapped_snp_positions)
+            else:
+                grouped = self._parse_seed_targets_grouped(output_targets, snp_position_map=mapped_snp_positions)
 
             out: Dict[str, List[Dict]] = dict(cached_results)
             for label in missing_sequences.keys():
@@ -1121,6 +1314,7 @@ class TargetScanLocalRunner:
 
                 cache_key = hashlib.sha1(f"{gene_id}|{missing_sequences[label]}".encode("utf-8")).hexdigest()
                 self.prediction_cache[cache_key] = copy.deepcopy(out[label])
+                self._save_to_disk_cache(cache_key, out[label])
                 self.prediction_cache_order.append(cache_key)
                 if len(self.prediction_cache_order) > self.max_prediction_cache:
                     old_key = self.prediction_cache_order.pop(0)
@@ -1237,10 +1431,10 @@ class TargetScanLocalRunner:
 
             mir_family_file = os.path.join(self.targetscan70_dir, "miR_Family_Info_human.txt")
             ts_script = os.path.join(self.targetscan70_dir, "targetscan_70.pl")
-            self._run_subprocess([self.perl_executable, ts_script, mir_family_file, utr_file, output_targets], cwd=self.targetscan70_dir)
+            self._run_subprocess([self.perl_executable, ts_script, mir_family_file, utr_file, output_targets], cwd=self.targetscan70_dir, timeout=600)
 
             count_script = os.path.join(self.context_dir, "targetscan_count_8mers.pl")
-            self._run_subprocess([self.perl_executable, count_script, mir_family_file, orf_file], cwd=self.context_dir, stdout_path=orf_8mer_counts)
+            self._run_subprocess([self.perl_executable, count_script, mir_family_file, orf_file], cwd=self.context_dir, stdout_path=orf_8mer_counts, timeout=600)
 
             generated_lengths = os.path.join(self.context_dir, "ORF.lengths.txt")
             if os.path.exists(generated_lengths):
@@ -1251,26 +1445,37 @@ class TargetScanLocalRunner:
 
             context_script = os.path.join(self.context_dir, "targetscan_70_context_scores.pl")
             mir_context_file = os.path.join(self.context_dir, "miR_for_context_scores.txt")
-            self._run_subprocess(
-                [
-                    self.perl_executable,
-                    context_script,
-                    mir_context_file,
-                    utr_file,
-                    output_targets,
-                    orf_lengths,
-                    orf_8mer_counts,
-                    output_context_scores,
-                ],
-                cwd=self.context_dir,
-            )
+            context_scores_available = True
+            try:
+                self._run_subprocess(
+                    [
+                        self.perl_executable,
+                        context_script,
+                        mir_context_file,
+                        utr_file,
+                        output_targets,
+                        orf_lengths,
+                        orf_8mer_counts,
+                        output_context_scores,
+                    ],
+                    cwd=self.context_dir,
+                    timeout=120,
+                )
+            except RuntimeError as e:
+                if "timed out" in str(e).lower():
+                    context_scores_available = False
+                else:
+                    raise
 
             if self.verbose_targetscan_logs and os.path.exists(output_targets):
                 shutil.copy(output_targets, os.path.join(run_log_dir, "output_targets.txt"))
             if self.verbose_targetscan_logs and os.path.exists(output_context_scores):
                 shutil.copy(output_context_scores, os.path.join(run_log_dir, "output_context_scores.txt"))
 
-            parsed = self._parse_context_scores(output_context_scores, snp_position=snp_position)
+            if context_scores_available:
+                parsed = self._parse_context_scores(output_context_scores, snp_position=snp_position)
+            else:
+                parsed = self._parse_seed_targets(output_targets, snp_position=snp_position)
             with open(os.path.join(run_log_dir, "status.log"), "w", encoding="utf-8") as f:
                 f.write("STATUS: SUCCESS_PERL\n")
                 f.write(f"Targets found: {len(parsed)}\n")
@@ -1351,6 +1556,7 @@ class TargetScanLocalRunner:
                 debug_meta=debug_meta,
             )
             self.prediction_cache[cache_key] = copy.deepcopy(result)
+            self._save_to_disk_cache(cache_key, result)
             self.prediction_cache_order.append(cache_key)
             if len(self.prediction_cache_order) > self.max_prediction_cache:
                 old_key = self.prediction_cache_order.pop(0)
@@ -1670,7 +1876,7 @@ class TargetScanLocalRunner:
             "recommendation": "Validate with ViennaRNA for publication-grade structural interpretation.",
         }
 
-    def export_results_csv(self, payload: Dict) -> str:
+    def export_results_csv(self, payload: Dict, delimiter: str = ',') -> str:
         output = io.StringIO()
         fieldnames = [
             "rs_id",
@@ -1679,22 +1885,28 @@ class TargetScanLocalRunner:
             "effect_type",
             "mirna_id",
             "site_type",
+            "ref_site_type",
+            "alt_site_type",
             "utr_start",
             "utr_end",
             "utr_region",
             "context_score",
             "raw_context_score",
-            "mature_mirna_sequence",
-            "mirna_family",
-            "pairing",
-            "evidence_level",
-            "binding_change",
-            "priority_score",
             "ref_score",
             "mut_score",
             "score_change",
+            "ref_mfe",
+            "alt_mfe",
+            "mfe_delta",
+            "ref_pvalue",
+            "alt_pvalue",
+            "mature_mirna_sequence",
+            "mirna_family",
+            "evidence_level",
+            "binding_change",
+            "priority_score",
         ]
-        writer = csv.DictWriter(output, fieldnames=fieldnames)
+        writer = csv.DictWriter(output, fieldnames=fieldnames, delimiter=delimiter)
         writer.writeheader()
 
         rows = payload.get("all_effects", []) or []
@@ -1707,20 +1919,26 @@ class TargetScanLocalRunner:
                     "effect_type": row.get("effect_type", ""),
                     "mirna_id": row.get("mirna_id", ""),
                     "site_type": row.get("site_type", ""),
+                    "ref_site_type": row.get("ref_site_type", ""),
+                    "alt_site_type": row.get("alt_site_type", ""),
                     "utr_start": row.get("utr_start", ""),
                     "utr_end": row.get("utr_end", ""),
                     "utr_region": row.get("utr_region", ""),
                     "context_score": row.get("context_score", ""),
                     "raw_context_score": row.get("raw_context_score", ""),
-                    "mature_mirna_sequence": row.get("mature_mirna_sequence", ""),
-                    "mirna_family": row.get("mirna_family", ""),
-                    "pairing": row.get("pairing", ""),
-                    "evidence_level": row.get("evidence_level", ""),
-                    "binding_change": row.get("binding_change", ""),
-                    "priority_score": row.get("priority_score", ""),
                     "ref_score": row.get("ref_score", ""),
                     "mut_score": row.get("mut_score", ""),
                     "score_change": row.get("score_change", ""),
+                    "ref_mfe": row.get("ref_mfe", ""),
+                    "alt_mfe": row.get("alt_mfe", ""),
+                    "mfe_delta": row.get("mfe_delta", ""),
+                    "ref_pvalue": row.get("ref_pvalue", ""),
+                    "alt_pvalue": row.get("alt_pvalue", ""),
+                    "mature_mirna_sequence": row.get("mature_mirna_sequence", ""),
+                    "mirna_family": row.get("mirna_family", ""),
+                    "evidence_level": row.get("evidence_level", ""),
+                    "binding_change": row.get("binding_change", ""),
+                    "priority_score": row.get("priority_score", ""),
                 }
             )
         return output.getvalue()

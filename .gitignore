@@ -1,3 +1,21 @@
 ﻿__pycache__/
 *.pyc
 targetsnap_logs/
+targetsnap_cache/
+
+# Paper and figures (not needed to run the tool)
+TargetSNAP_Paper.docx
+Figure*.jpg
+generate_paper.py
+generate_figures.py
+
+# Backups
+templates/web_index_backup.html
+
+# Generated RNAplfold FASTA files (created at runtime)
+TargetScan/TargetScan7_context_scores/RNAplfold_in_out/ENSG*.fa
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.swp

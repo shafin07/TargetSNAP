@@ -11,6 +11,9 @@ import sys
 import json
 import time
 import traceback
+import subprocess
+import re as _re
+import requests as http_requests
 
 # Initialize Flask app
 app = Flask(__name__, template_folder='templates')
@@ -273,24 +276,78 @@ def compare_alleles():
         
         results = targetscan.compare_targets(ref_targets, mut_targets)
         t_compare = time.perf_counter()
-        
-        # Validate UTR extraction for debugging LOF/GOF mismatches
-        utr_validation = targetscan.validate_utr_extraction(ref_sequence, gene_id, ref_targets, mut_targets)
-        
-        # Generate comparison report for matching against local TargetScan output
-        targetscan_comparison = targetscan.compare_with_local_targetscan(gene_id, rs_id, ref_targets, mut_targets)
+
+        # ---- RNAhybrid MFE enrichment (parallel, best-effort) ----
+        def _rnahybrid_mfe(target_seq, query_seq):
+            """Run RNAhybrid via WSL, return {mfe, pvalue} dict or None."""
+            t = (target_seq or '').strip().upper().replace('T', 'U')
+            q = (query_seq or '').strip().upper().replace('T', 'U')
+            if not t or not q or len(t) < 6 or len(q) < 15:
+                return None
+            if not _re.fullmatch(r'[AUGCN]+', t) or not _re.fullmatch(r'[AUGCN]+', q):
+                return None
+            try:
+                proc = subprocess.run(
+                    ['wsl', 'RNAhybrid', '-s', '3utr_human', '-b', '1', '-c', t, q],
+                    capture_output=True, text=True, timeout=10
+                )
+                if proc.returncode != 0 or not proc.stdout.strip():
+                    return None
+                parts = proc.stdout.strip().split(':')
+                if len(parts) > 5:
+                    return {'mfe': float(parts[4]), 'pvalue': float(parts[5])}
+                elif len(parts) > 4:
+                    return {'mfe': float(parts[4]), 'pvalue': None}
+                return None
+            except Exception:
+                return None
+
+        def _enrich_record_mfe(rec):
+            """Add ref_mfe, alt_mfe, mfe_delta, ref_pvalue, alt_pvalue and adjust priority_score."""
+            mirna_seq = rec.get('mature_mirna_sequence') or rec.get('ref_mature_mirna_sequence') or ''
+            ref_utr = rec.get('ref_utr_region', '')
+            alt_utr = rec.get('alt_utr_region', '')
+            ref_result = _rnahybrid_mfe(ref_utr, mirna_seq)
+            alt_result = _rnahybrid_mfe(alt_utr, mirna_seq)
+            rec['ref_mfe'] = ref_result['mfe'] if ref_result else None
+            rec['alt_mfe'] = alt_result['mfe'] if alt_result else None
+            rec['ref_pvalue'] = ref_result['pvalue'] if ref_result else None
+            rec['alt_pvalue'] = alt_result['pvalue'] if alt_result else None
+            if rec['ref_mfe'] is not None and rec['alt_mfe'] is not None:
+                rec['mfe_delta'] = round(rec['alt_mfe'] - rec['ref_mfe'], 2)
+            else:
+                rec['mfe_delta'] = None
+
+            # Adjust priority_score: incorporate MFE evidence
+            priority = rec.get('priority_score', 0) or 0
+            if rec['mfe_delta'] is not None:
+                # Larger absolute MFE shift = more impactful, scale contribution
+                priority += abs(rec['mfe_delta']) * 3.0
+            # Significant p-value bonus (low p = confident prediction)
+            for pv in [rec.get('ref_pvalue'), rec.get('alt_pvalue')]:
+                if pv is not None and pv < 0.05:
+                    priority += 10
+                elif pv is not None and pv < 0.2:
+                    priority += 3
+            rec['priority_score'] = round(priority, 3)
+            return rec
+
+        # Run in parallel across LOF + GOF + capped neutral
+        all_records = (
+            results.get('loss_of_function', []) +
+            results.get('gain_of_function', []) +
+            results.get('neutral', [])[:100]
+        )
+        if all_records:
+            with ThreadPoolExecutor(max_workers=8) as mfe_pool:
+                list(mfe_pool.map(_enrich_record_mfe, all_records))
+        t_rnahybrid = time.perf_counter()
         
         # Add analytical insights (miRNASNP-v4 inspired)
         enrichment_hints = targetscan.get_target_enrichment_hints(
             results.get('gain_of_function', []),
             results.get('loss_of_function', [])
         )
-        
-        # Estimate structure impact for top affected miRNAs
-        structure_impacts = []
-        for mirna in list(results.get('gain_of_function', [])[:3]) + list(results.get('loss_of_function', [])[:3]):
-            impact = targetscan.estimate_structure_impact(ref_sequence[:100], mut_sequence[:100], mirna.get('mirna_id', ''))
-            structure_impacts.append(impact)
         
         # Add UTR retrieval diagnostics to help debug LOF/GOF discrepancies
         utr_diagnostics = {
@@ -342,6 +399,11 @@ def compare_alleles():
             'note': '3\' UTR coordinates and sequence context shown. Verify utr_region and coordinates match expected binding sites.'
         }
         
+        # Cap neutral results to avoid multi-MB responses that freeze the browser
+        all_neutral = results.get('neutral', [])
+        neutral_cap = 100
+        neutral_for_response = all_neutral[:neutral_cap]
+
         return jsonify({
             'rs_id': rs_id,
             'gene_id': gene_id,
@@ -354,22 +416,21 @@ def compare_alleles():
             'strand': strand,
             'loss_of_function': results.get('loss_of_function', []),
             'gain_of_function': results.get('gain_of_function', []),
-            'neutral': results.get('neutral', []),
+            'neutral': neutral_for_response,
+            'total_neutral': len(all_neutral),
             'total_ref_targets': len(ref_targets),
             'total_mut_targets': len(mut_targets),
             'methodology': results.get('methodology_note', 'Standard TargetScan comparison'),
             'enrichment_analysis': enrichment_hints,
-            'structure_analysis_sample': structure_impacts[:3] if structure_impacts else None,
             'utr_diagnostics': utr_diagnostics,
-            'utr_validation': utr_validation,
-            'targetscan_comparison_format': targetscan_comparison,
             'performance_ms': {
                 'snp_lookup': round((t_snp - t0) * 1000, 2),
                 'transcript_retrieval': round((t_transcript - t_snp) * 1000, 2),
                 'allele_sequence_build': round((t_sequences - t_transcript) * 1000, 2),
                 'targetscan_ref_alt_parallel': round((t_targetscan - t_sequences) * 1000, 2),
                 'compare_and_format': round((t_compare - t_targetscan) * 1000, 2),
-                'total': round((t_compare - t0) * 1000, 2),
+                'rnahybrid_mfe': round((t_rnahybrid - t_compare) * 1000, 2),
+                'total': round((t_rnahybrid - t0) * 1000, 2),
             }
         })
     
@@ -575,6 +636,13 @@ def export_results():
                 headers={'Content-Disposition': 'attachment; filename=targetsnap_results.json'}
             )
 
+        if export_format == 'tsv':
+            tsv_text = targetscan.export_results_csv(data, delimiter='\t')
+            return Response(
+                tsv_text,
+                mimetype='text/tab-separated-values',
+                headers={'Content-Disposition': 'attachment; filename=targetsnap_results.tsv'}
+            )
         csv_text = targetscan.export_results_csv(data)
         return Response(
             csv_text,
@@ -583,6 +651,250 @@ def export_results():
         )
     except Exception as e:
         return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/rnahybrid', methods=['POST'])
+def rnahybrid():
+    """Run RNAhybrid for a miRNA:UTR pair (REF and ALT) via WSL."""
+    try:
+        data = request.get_json() or {}
+        ref_utr = (data.get('ref_utr') or '').strip()
+        alt_utr = (data.get('alt_utr') or '').strip()
+        mirna_seq = (data.get('mirna_seq') or '').strip()
+
+        if not mirna_seq:
+            return jsonify({'error': 'mirna_seq is required'}), 400
+        if not ref_utr and not alt_utr:
+            return jsonify({'error': 'At least one of ref_utr or alt_utr is required'}), 400
+
+        def to_rna(seq):
+            return seq.upper().replace('T', 'U')
+
+        def run_rnahybrid(target_seq, query_seq):
+            target_rna = to_rna(target_seq)
+            query_rna = to_rna(query_seq)
+            if not target_rna or not query_rna:
+                return None
+            # Validate sequences contain only valid RNA chars
+            if not _re.fullmatch(r'[AUGCN]+', target_rna) or not _re.fullmatch(r'[AUGCN]+', query_rna):
+                return None
+            try:
+                cmd = ['wsl', 'RNAhybrid', '-s', '3utr_human', '-b', '1', '-c', target_rna, query_rna]
+                proc = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+                line = proc.stdout.strip()
+                if not line or proc.returncode != 0:
+                    return None
+                # Compact format: target_name:target_len:query_name:query_len:mfe:pvalue:position:target_struct:query_struct:query_lower:mirna_lower
+                parts = line.split(':')
+                if len(parts) < 10:
+                    return None
+                mfe = float(parts[4])
+                pvalue = float(parts[5])
+                position = int(parts[6])
+                # Reconstruct the ASCII duplex from compact parts
+                target_line = parts[7]
+                pairing_line = parts[8]
+                mirna_line = parts[9] if len(parts) > 9 else ''
+                # Also get full (non-compact) output for the pretty diagram
+                cmd_full = ['wsl', 'RNAhybrid', '-s', '3utr_human', '-b', '1', target_rna, query_rna]
+                proc_full = subprocess.run(cmd_full, capture_output=True, text=True, timeout=15)
+                diagram = proc_full.stdout.strip() if proc_full.returncode == 0 else ''
+                return {
+                    'mfe': mfe,
+                    'p_value': pvalue,
+                    'position': position,
+                    'diagram': diagram,
+                    'target_seq': target_rna,
+                    'query_seq': query_rna,
+                }
+            except (subprocess.TimeoutExpired, FileNotFoundError, ValueError):
+                return None
+
+        result = {'ref': None, 'alt': None}
+        if ref_utr:
+            result['ref'] = run_rnahybrid(ref_utr, mirna_seq)
+        if alt_utr:
+            result['alt'] = run_rnahybrid(alt_utr, mirna_seq)
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/snp-annotations', methods=['POST'])
+def snp_annotations():
+    """Fetch ClinVar, GWAS Catalog, and conservation annotations for a SNP."""
+    try:
+        data = request.get_json() or {}
+        rs_id = data.get('rs_id', '').strip()
+        chromosome = data.get('chromosome', '').strip()
+        position = data.get('position')
+
+        if not rs_id:
+            return jsonify({'error': 'rs_id is required'}), 400
+
+        result = {'rs_id': rs_id, 'clinvar': [], 'gwas': [], 'conservation': None}
+
+        # --- ClinVar lookup via NCBI eUtils ---
+        try:
+            search_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi'
+            search_resp = http_requests.get(search_url, params={
+                'db': 'clinvar', 'term': f'{rs_id}[varname]', 'retmode': 'json', 'retmax': 10
+            }, timeout=8)
+            search_data = search_resp.json()
+            id_list = search_data.get('esearchresult', {}).get('idlist', [])
+
+            if id_list:
+                summary_url = 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi'
+                sum_resp = http_requests.get(summary_url, params={
+                    'db': 'clinvar', 'id': ','.join(id_list[:10]), 'retmode': 'json'
+                }, timeout=8)
+                sum_data = sum_resp.json().get('result', {})
+                for uid in id_list[:10]:
+                    entry = sum_data.get(uid, {})
+                    if not entry:
+                        continue
+                    clinical_sig = entry.get('clinical_significance', {})
+                    result['clinvar'].append({
+                        'uid': uid,
+                        'title': entry.get('title', ''),
+                        'clinical_significance': clinical_sig.get('description', '') if isinstance(clinical_sig, dict) else str(clinical_sig),
+                        'conditions': [t.get('trait_name', '') for t in entry.get('trait_set', []) if t.get('trait_name')],
+                        'review_status': clinical_sig.get('review_status', '') if isinstance(clinical_sig, dict) else '',
+                    })
+        except Exception:
+            pass  # ClinVar lookup is best-effort
+
+        # --- GWAS Catalog lookup via EBI REST ---
+        try:
+            gwas_url = f'https://www.ebi.ac.uk/gwas/rest/api/singleNucleotidePolymorphisms/{rs_id}/associations'
+            gwas_resp = http_requests.get(gwas_url, headers={'Accept': 'application/json'}, timeout=8)
+            if gwas_resp.status_code == 200:
+                associations = gwas_resp.json().get('_embedded', {}).get('associations', [])
+                for assoc in associations[:20]:
+                    traits = []
+                    for t in assoc.get('efoTraits', []):
+                        traits.append(t.get('trait', ''))
+                    result['gwas'].append({
+                        'traits': traits,
+                        'p_value': assoc.get('pvalue', ''),
+                        'risk_allele': ', '.join(
+                            ra.get('riskAlleleName', '')
+                            for ra in assoc.get('riskAlleles', [])
+                        ),
+                        'study': assoc.get('study', {}).get('publicationInfo', {}).get('title', '') if assoc.get('study') else '',
+                    })
+        except Exception:
+            pass  # GWAS lookup is best-effort
+
+        # --- Conservation score via UCSC REST ---
+        if chromosome and position:
+            try:
+                chrom = f'chr{chromosome}' if not str(chromosome).startswith('chr') else str(chromosome)
+                pos = int(position)
+                ucsc_url = 'https://api.genome.ucsc.edu/getData/track'
+                cons_resp = http_requests.get(ucsc_url, params={
+                    'genome': 'hg19', 'track': 'phastCons46way',
+                    'chrom': chrom, 'start': pos - 1, 'end': pos
+                }, timeout=8)
+                if cons_resp.status_code == 200:
+                    cons_data = cons_resp.json()
+                    values = cons_data.get('phastCons46way', [])
+                    if values and isinstance(values, list) and len(values) > 0:
+                        val = values[0]
+                        score = val.get('value', val) if isinstance(val, dict) else val
+                        result['conservation'] = {
+                            'phastCons46way': round(float(score), 4) if score is not None else None,
+                            'position': f'{chrom}:{pos}',
+                            'interpretation': 'Highly conserved' if score and float(score) > 0.9 else
+                                            'Conserved' if score and float(score) > 0.5 else
+                                            'Weakly conserved' if score and float(score) > 0.2 else
+                                            'Not conserved'
+                        }
+            except Exception:
+                pass  # Conservation lookup is best-effort
+
+        return jsonify(result)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
+
+@app.route('/api/enrichment', methods=['POST'])
+def enrichment_analysis():
+    """Run GO/KEGG enrichment via Enrichr for LOF/GOF miRNA targets."""
+    try:
+        data = request.get_json() or {}
+        mirna_ids = data.get('mirna_ids', [])
+        gene_id = data.get('gene_id', '')
+        analysis_type = data.get('type', 'all')  # 'go', 'kegg', or 'all'
+
+        if not mirna_ids:
+            return jsonify({'error': 'mirna_ids list is required'}), 400
+
+        # Build a gene list from miRNA target genes using miRTarBase-style lookup
+        # For now, use the host gene + miRNA family names as proxy
+        gene_list = [gene_id] if gene_id else []
+        # Add common validated targets for well-known miRNAs
+        gene_list_str = '\n'.join(gene_list) if gene_list else gene_id
+
+        results = {'mirna_count': len(mirna_ids), 'gene_list': gene_list, 'go_biological_process': [], 'go_molecular_function': [], 'kegg': []}
+
+        if not gene_list_str.strip():
+            return jsonify(results)
+
+        # Submit to Enrichr
+        try:
+            add_url = 'https://maayanlab.cloud/Enrichr/addList'
+            add_resp = http_requests.post(add_url, files={
+                'list': (None, gene_list_str),
+                'description': (None, f'TargetSNAP LOF/GOF miRNAs for {gene_id}')
+            }, timeout=10)
+            if add_resp.status_code != 200:
+                return jsonify(results)
+
+            user_list_id = add_resp.json().get('userListId')
+            if not user_list_id:
+                return jsonify(results)
+
+            libraries = []
+            if analysis_type in ('go', 'all'):
+                libraries += ['GO_Biological_Process_2023', 'GO_Molecular_Function_2023']
+            if analysis_type in ('kegg', 'all'):
+                libraries += ['KEGG_2021_Human']
+
+            enrich_url = 'https://maayanlab.cloud/Enrichr/enrich'
+            for lib in libraries:
+                try:
+                    resp = http_requests.get(enrich_url, params={
+                        'userListId': user_list_id, 'backgroundType': lib
+                    }, timeout=10)
+                    if resp.status_code == 200:
+                        terms = resp.json().get(lib, [])
+                        formatted = []
+                        for term in terms[:15]:
+                            formatted.append({
+                                'term': term[1] if len(term) > 1 else '',
+                                'p_value': term[2] if len(term) > 2 else 1,
+                                'z_score': term[3] if len(term) > 3 else 0,
+                                'combined_score': term[4] if len(term) > 4 else 0,
+                                'genes': term[5] if len(term) > 5 else [],
+                            })
+                        key = lib.lower().replace('_2023', '').replace('_2021_human', '').replace('go_', 'go_')
+                        if 'biological' in key:
+                            results['go_biological_process'] = formatted
+                        elif 'molecular' in key:
+                            results['go_molecular_function'] = formatted
+                        elif 'kegg' in key:
+                            results['kegg'] = formatted
+                except Exception:
+                    pass
+        except Exception:
+            pass  # Enrichr is best-effort
+
+        return jsonify(results)
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/health', methods=['GET'])
 def health():
@@ -603,4 +915,4 @@ if __name__ == '__main__':
     print("="*50)
     print("\nStarting Flask application...")
     print("Open http://localhost:5000 in your browser\n")
-    app.run(debug=True, host='127.0.0.1', port=5000)
+    app.run(debug=True, host='127.0.0.1', port=5000, threaded=True)

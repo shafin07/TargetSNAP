@@ -5,315 +5,315 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>TargetSNAP Web - SNP Analysis</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        :root {
+            --primary: #667eea;
+            --primary-dark: #4f46e5;
+            --accent: #764ba2;
+            --red: #dc2626;
+            --green: #16a34a;
+            --blue: #2563eb;
+            --gray-50: #f9fafb;
+            --gray-100: #f3f4f6;
+            --gray-200: #e5e7eb;
+            --gray-300: #d1d5db;
+            --gray-500: #6b7280;
+            --gray-700: #374151;
+            --gray-900: #111827;
+            --radius: 10px;
+            --shadow: 0 4px 24px rgba(0,0,0,0.08);
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.12);
         }
-        
+
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
             padding: 20px;
+            color: var(--gray-900);
         }
-        
-        .container {
-            max-width: 1400px;
-            margin: 0 auto;
-        }
-        
+
+        .container { max-width: 1440px; margin: 0 auto; }
+
+        /* -- Header -- */
         header {
             background: white;
-            padding: 30px 40px;
-            border-radius: 10px 10px 0 0;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
-        }
-        
-        header h1 {
-            color: #667eea;
-            margin-bottom: 5px;
-            font-size: 2.2em;
-        }
-        
-        header p {
-            color: #999;
-            font-size: 0.95em;
-        }
-        
-        main {
-            background: white;
-            padding: 40px;
-            margin-top: 20px;
-            border-radius: 0 0 10px 10px;
-            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
-        }
-        
-        .search-section {
-            margin-bottom: 40px;
-        }
-
-        .top-controls {
+            padding: 24px 32px;
+            border-radius: var(--radius) var(--radius) 0 0;
+            box-shadow: var(--shadow);
             display: flex;
-            gap: 10px;
+            justify-content: space-between;
             align-items: center;
             flex-wrap: wrap;
-            margin-bottom: 12px;
+            gap: 12px;
+        }
+        header h1 { color: var(--primary); font-size: 2em; }
+        header p { color: var(--gray-500); font-size: 0.92em; }
+
+        /* -- Buttons -- */
+        .btn {
+            padding: 10px 24px;
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 0.95em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: transform 0.15s, box-shadow 0.15s;
+        }
+        .btn:hover { transform: translateY(-1px); box-shadow: 0 4px 12px rgba(102,126,234,0.4); }
+        .btn:active { transform: translateY(0); }
+        .btn-sm { padding: 6px 14px; font-size: 0.85em; }
+        .btn-outline {
+            background: transparent;
+            border: 2px solid var(--primary);
+            color: var(--primary);
+        }
+        .btn-outline:hover { background: var(--primary); color: #fff; box-shadow: none; }
+
+        /* -- Main -- */
+        main {
+            background: white;
+            padding: 32px;
+            margin-top: 2px;
+            border-radius: 0 0 var(--radius) var(--radius);
+            box-shadow: var(--shadow-lg);
         }
 
+        /* -- Search -- */
+        .search-box { display: flex; gap: 10px; margin-bottom: 20px; }
+        input[type="text"] {
+            flex: 1;
+            padding: 14px 18px;
+            border: 2px solid var(--gray-200);
+            border-radius: 6px;
+            font-size: 1em;
+            transition: border-color 0.2s, box-shadow 0.2s;
+        }
+        input[type="text"]:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(102,126,234,0.12);
+        }
         select {
             padding: 10px 12px;
-            border: 1px solid #cbd5e1;
-            border-radius: 5px;
+            border: 1px solid var(--gray-300);
+            border-radius: 6px;
             background: #fff;
-            color: #1f2937;
             min-width: 200px;
         }
 
-
-        
-        .search-box {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 20px;
-        }
-        
-        input[type="text"] {
-            flex: 1;
-            padding: 15px 20px;
-            border: 2px solid #e0e0e0;
-            border-radius: 5px;
-            font-size: 1em;
-            transition: border-color 0.3s;
-        }
-        
-        input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        button {
-            padding: 15px 30px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 5px;
-            font-size: 1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
-        }
-        
-        .loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-            color: #667eea;
-        }
-        
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #667eea;
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-        
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        
+        /* -- Error -- */
         .error {
-            background: #fee;
-            border-left: 4px solid #e74c3c;
-            padding: 15px;
-            border-radius: 5px;
-            margin-bottom: 20px;
+            background: #fef2f2;
+            border-left: 4px solid var(--red);
+            padding: 12px 40px 12px 16px;
+            border-radius: 6px;
+            margin-bottom: 16px;
             display: none;
-            color: #c0392b;
+            color: #991b1b;
             position: relative;
-            padding-right: 40px;
+        }
+        .error-close {
+            position: absolute; right: 10px; top: 8px;
+            border: none; background: transparent; color: #991b1b;
+            font-size: 20px; cursor: pointer; padding: 0;
         }
 
-        .error-close {
-            position: absolute;
-            right: 10px;
-            top: 8px;
-            border: none;
-            background: transparent;
-            color: #c0392b;
-            font-size: 20px;
-            line-height: 1;
-            cursor: pointer;
-            padding: 0;
-        }
-        
+        /* -- Grid panels -- */
         .results-grid {
             display: grid;
             grid-template-columns: 1fr 1fr;
-            gap: 30px;
-            margin-top: 30px;
-        }
-        
-        .panel {
-            background: #f9f9f9;
-            border: 1px solid #e0e0e0;
-            border-radius: 8px;
-            padding: 20px;
-        }
-        
-        .panel h3 {
-            color: #667eea;
-            margin-bottom: 15px;
-            font-size: 1.3em;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #667eea;
-        }
-        
-        .gene-list, .transcript-list {
-            list-style: none;
-            max-height: 400px;
-            overflow-y: auto;
-        }
-        
-        .gene-item, .transcript-item {
-            padding: 12px;
-            margin-bottom: 8px;
-            background: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .gene-item:hover, .transcript-item:hover {
-            border-color: #667eea;
-            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.2);
-            transform: translateX(5px);
-        }
-        
-        .gene-item.selected, .transcript-item.selected {
-            background: #e8eef7;
-            border-color: #667eea;
-            font-weight: bold;
-        }
-        
-        .gene-name {
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .gene-meta {
-            font-size: 0.9em;
-            color: #999;
-            margin-top: 5px;
-        }
-        
-        .results-section {
-            background: white;
-            border: 2px solid #667eea;
-            border-radius: 8px;
-            padding: 20px;
-            margin-top: 30px;
-            display: none;
-        }
-
-        .eqtl-section {
+            gap: 24px;
             margin-top: 24px;
-            padding: 16px;
-            border: 1px solid #c7d2fe;
+        }
+        .panel {
+            background: var(--gray-50);
+            border: 1px solid var(--gray-200);
             border-radius: 8px;
-            background: #f8faff;
-            display: none;
+            padding: 18px;
         }
+        .panel h3 { color: var(--primary); margin-bottom: 12px; font-size: 1.15em; padding-bottom: 8px; border-bottom: 2px solid var(--primary); }
 
-        .eqtl-summary {
-            margin-bottom: 12px;
-            color: #1e3a8a;
-            font-size: 14px;
-        }
-
-        .eqtl-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-
-        .eqtl-table th,
-        .eqtl-table td {
-            border: 1px solid #dbeafe;
-            padding: 6px 8px;
-            text-align: left;
-        }
-
-        .eqtl-table th {
-            background: #eef2ff;
-            color: #312e81;
-        }
-        
-        .results-section h2 {
-            color: #667eea;
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #667eea;
-        }
-        
-        .effect-section {
-            margin-bottom: 30px;
-        }
-        
-        .effect-title {
-            font-size: 1.2em;
-            font-weight: bold;
-            padding: 10px;
-            border-radius: 5px;
-            margin-bottom: 15px;
-        }
-        
-        .loss-title {
-            background: #ffebee;
-            color: #c62828;
-            border-left: 4px solid #c62828;
-        }
-        
-        .gain-title {
-            background: #e8f5e9;
-            color: #2e7d32;
-            border-left: 4px solid #2e7d32;
-        }
-
-        .neutral-title {
-            background: #eff6ff;
-            color: #1e3a8a;
-            border-left: 4px solid #2563eb;
-        }
-        
-        .mirna-result {
-            padding: 12px;
-            margin-bottom: 10px;
+        .gene-list, .transcript-list { list-style: none; max-height: 380px; overflow-y: auto; }
+        .gene-item, .transcript-item {
+            padding: 10px 12px;
+            margin-bottom: 6px;
             background: white;
-            border: 1px solid #ddd;
-            border-radius: 5px;
-            display: block;
+            border: 1px solid var(--gray-200);
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.15s;
         }
+        .gene-item:hover, .transcript-item:hover {
+            border-color: var(--primary);
+            box-shadow: 0 2px 8px rgba(102,126,234,0.15);
+            transform: translateX(3px);
+        }
+        .gene-item.selected, .transcript-item.selected {
+            background: #eef2ff;
+            border-color: var(--primary);
+            font-weight: 600;
+        }
+        .gene-name { font-weight: 600; color: var(--gray-900); }
+        .gene-meta { font-size: 0.88em; color: var(--gray-500); margin-top: 3px; }
 
-        .mirna-dropdown {
-            border: 1px solid #d6dcf6;
+        /* -- SNP Annotation Banner -- */
+        .annotation-banner {
+            display: none;
+            margin-top: 24px;
             border-radius: 8px;
-            background: #fff;
-            margin-bottom: 10px;
+            overflow: hidden;
+            border: 1px solid var(--gray-200);
+        }
+        .annotation-banner.visible { display: block; }
+        .annotation-header {
+            background: linear-gradient(135deg, #eef2ff, #f5f3ff);
+            padding: 14px 20px;
+            font-weight: 700;
+            color: var(--primary-dark);
+            font-size: 1.05em;
+            border-bottom: 1px solid var(--gray-200);
+        }
+        .annotation-body {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 16px;
+            padding: 16px 20px;
+            background: white;
+        }
+        .annotation-card {
+            padding: 14px;
+            border-radius: 8px;
+            border: 1px solid var(--gray-200);
+            background: var(--gray-50);
+        }
+        .annotation-card h4 {
+            font-size: 0.85em;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--gray-500);
+            margin-bottom: 8px;
+        }
+        .badge {
+            display: inline-block;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 0.82em;
+            font-weight: 600;
+            margin: 2px 4px 2px 0;
+        }
+        .badge-pathogenic { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
+        .badge-benign { background: #f0fdf4; color: #166534; border: 1px solid #86efac; }
+        .badge-vus { background: #fffbeb; color: #92400e; border: 1px solid #fcd34d; }
+        .badge-gwas { background: #eff6ff; color: #1e40af; border: 1px solid #93c5fd; }
+        .badge-conserved { background: #f5f3ff; color: #5b21b6; border: 1px solid #c4b5fd; }
+        .badge-not-conserved { background: var(--gray-100); color: var(--gray-500); border: 1px solid var(--gray-300); }
+        .conservation-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: var(--gray-200);
+            margin-top: 6px;
             overflow: hidden;
         }
+        .conservation-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(90deg, #a78bfa, #7c3aed);
+            transition: width 0.5s ease;
+        }
 
+        /* -- Results section -- */
+        .results-section {
+            background: white;
+            border: 2px solid var(--primary);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 24px;
+            display: none;
+        }
+        .results-section h2 { color: var(--primary); margin-bottom: 16px; padding-bottom: 10px; border-bottom: 2px solid var(--primary); }
+
+        /* -- Filter bar -- */
+        .filter-bar {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+            padding: 10px 14px;
+            background: var(--gray-50);
+            border-radius: 8px;
+            border: 1px solid var(--gray-200);
+        }
+        .filter-bar label { font-size: 0.9em; color: var(--gray-700); font-weight: 600; }
+        .filter-bar select { min-width: 220px; }
+        .filter-bar .filter-info {
+            font-size: 0.82em;
+            color: var(--gray-500);
+            margin-left: auto;
+        }
+
+        /* -- Stats -- */
+        .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 20px; }
+        .stat-box {
+            background: var(--gray-50);
+            padding: 14px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid var(--primary);
+        }
+        .stat-value { font-size: 1.8em; font-weight: 700; color: var(--primary); }
+
+        /* -- Results controls -- */
+        .results-controls {
+            margin: 8px 0 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--gray-700);
+            font-size: 0.9em;
+        }
+        .results-controls input[type="checkbox"] { transform: scale(1.1); accent-color: var(--primary); }
+
+        /* -- Effect sections -- */
+        .effect-section { margin-bottom: 24px; }
+        .effect-title {
+            font-size: 1.1em;
+            font-weight: 700;
+            padding: 10px 14px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+        }
+        .loss-title { background: #fff7ed; color: #9a3412; border-left: 4px solid #f97316; }
+        .gain-title { background: #f0fdf4; color: #166534; border-left: 4px solid var(--green); }
+        .neutral-title { background: #eff6ff; color: #1e3a8a; border-left: 4px solid var(--blue); }
+        .section-controls {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 10px;
+        }
+        .section-controls .effect-title { margin-bottom: 0; flex: 1; }
+        .top10-toggle {
+            padding: 4px 12px; font-size: 0.82em; font-weight: 600;
+            border: 1px solid var(--gray-300); border-radius: 14px;
+            background: white; color: var(--gray-700); cursor: pointer;
+            transition: all 0.15s; white-space: nowrap;
+        }
+        .top10-toggle:hover { border-color: var(--primary); color: var(--primary); }
+        .top10-toggle.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+        /* -- miRNA dropdown cards -- */
+        .mirna-dropdown {
+            border: 1px solid #e0e7ff;
+            border-radius: 8px;
+            background: #fff;
+            margin-bottom: 8px;
+            overflow: hidden;
+            transition: box-shadow 0.15s;
+        }
+        .mirna-dropdown:hover { box-shadow: 0 2px 8px rgba(102,126,234,0.1); }
         .mirna-summary {
             list-style: none;
             display: flex;
@@ -321,35 +321,17 @@
             align-items: center;
             gap: 10px;
             cursor: pointer;
-            padding: 12px 14px;
-            background: #f8faff;
+            padding: 10px 14px;
+            background: #fafbff;
             border-bottom: 1px solid transparent;
+            transition: background 0.15s;
         }
-
-        .mirna-summary::-webkit-details-marker {
-            display: none;
-        }
-
-        .mirna-dropdown[open] .mirna-summary {
-            border-bottom-color: #d6dcf6;
-            background: #eef2ff;
-        }
-
-        .mirna-main {
-            font-weight: 700;
-            color: #1f2937;
-        }
-
-        .mirna-score {
-            font-weight: 700;
-            color: #3949ab;
-            font-size: 14px;
-        }
-
-        .mirna-details {
-            padding: 12px 14px 14px;
-        }
-
+        .mirna-summary::-webkit-details-marker { display: none; }
+        .mirna-dropdown[open] .mirna-summary { border-bottom-color: #e0e7ff; background: #eef2ff; }
+        .mirna-main { font-weight: 700; color: var(--gray-900); }
+        .mirna-badges { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
+        .mirna-score { font-weight: 700; color: #3949ab; font-size: 0.9em; }
+        .mirna-details { padding: 12px 14px 14px; }
         .mirna-header {
             display: flex;
             justify-content: space-between;
@@ -358,158 +340,368 @@
             flex-wrap: wrap;
         }
 
-        .binding-block {
-            margin-top: 10px;
-            padding: 10px;
+        .meta-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 12px;
+            background: #e0e7ff;
+            color: #3730a3;
+            font-size: 0.78em;
+            font-weight: 600;
+        }
+        .score-badge {
+            display: inline-block;
+            padding: 3px 8px;
             border-radius: 4px;
-            background: #f8f9ff;
-            border: 1px solid #e1e6ff;
-            font-family: Consolas, 'Courier New', monospace;
-            font-size: 12px;
-            line-height: 1.4;
-            white-space: pre-wrap;
-            word-break: break-word;
+            font-weight: 700;
+            font-size: 0.85em;
         }
 
+        /* -- Duplex visualization -- */
         .binding-columns {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 10px;
             margin-top: 10px;
         }
-
+        .binding-block {
+            padding: 10px;
+            border-radius: 6px;
+            background: #f8f9ff;
+            border: 1px solid #e1e6ff;
+            font-family: 'Cascadia Code', Consolas, 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.5;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .binding-title { font-weight: 700; color: #3949ab; margin-bottom: 4px; font-family: 'Segoe UI', system-ui, sans-serif; font-size: 0.82em; }
         .pairing-view {
-            margin-top: 8px;
+            margin-top: 6px;
             padding: 8px;
             border-radius: 4px;
             background: #ffffff;
             border: 1px dashed #cfd8ff;
-            font-family: Consolas, 'Courier New', monospace;
+            font-family: 'Cascadia Code', Consolas, 'Courier New', monospace;
             font-size: 12px;
-            line-height: 1.35;
+            line-height: 1.4;
             white-space: pre;
             overflow-x: auto;
         }
+        .snp-highlight { background: #fef08a; color: #92400e; font-weight: 700; padding: 0 1px; border-radius: 2px; }
 
-        .results-controls {
-            margin: 8px 0 18px;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-            color: #334155;
-            font-size: 14px;
-        }
+        .empty-msg { text-align: center; padding: 20px; color: var(--gray-500); }
 
-        .results-controls input {
-            transform: scale(1.1);
-        }
 
-        .binding-title {
-            font-weight: 700;
-            color: #3949ab;
-            margin-bottom: 4px;
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            font-size: 12px;
-        }
-        
-        .score-badge {
-            display: inline-block;
-            padding: 4px 10px;
-            border-radius: 3px;
-            font-weight: bold;
-            font-size: 0.85em;
-        }
 
-        .meta-badge {
-            display: inline-block;
-            margin-left: 8px;
-            padding: 3px 8px;
-            border-radius: 12px;
-            background: #e0e7ff;
-            color: #3730a3;
-            font-size: 12px;
-            font-weight: 600;
+        /* -- eQTL -- */
+        .eqtl-section {
+            margin-top: 24px;
+            padding: 16px;
+            border: 1px solid #c7d2fe;
+            border-radius: 8px;
+            background: #f8faff;
+            display: none;
         }
-        
-        .empty-msg {
-            text-align: center;
-            padding: 20px;
-            color: #999;
-        }
-        
-        .stats {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 15px;
-            margin-bottom: 20px;
-        }
-        
-        .stat-box {
-            background: #f0f4ff;
-            padding: 15px;
-            border-radius: 5px;
-            text-align: center;
-            border-left: 4px solid #667eea;
-        }
-        
-        .stat-value {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #667eea;
-        }
+        .eqtl-summary { margin-bottom: 12px; color: #1e3a8a; font-size: 0.9em; }
+        .eqtl-table { width: 100%; border-collapse: collapse; font-size: 0.85em; }
+        .eqtl-table th, .eqtl-table td { border: 1px solid #dbeafe; padding: 6px 8px; text-align: left; }
+        .eqtl-table th { background: #eef2ff; color: #312e81; }
 
+        /* -- Progress bar -- */
+        .progress-bar-wrapper {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 9999;
+            background: rgba(102,126,234,0.12);
+            backdrop-filter: blur(6px);
+            transform: translateY(-100%);
+            transition: transform 0.35s ease;
+            pointer-events: none;
+        }
+        .progress-bar-wrapper.visible { transform: translateY(0); }
+        .progress-track { height: 4px; background: rgba(102,126,234,0.18); overflow: hidden; }
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2, #667eea);
+            background-size: 200% 100%;
+            animation: progressShimmer 1.8s ease-in-out infinite;
+            width: 0%;
+            transition: width 0.4s ease;
+        }
+        @keyframes progressShimmer { 0% { background-position: 200% 0; } 100% { background-position: -200% 0; } }
+        .progress-label {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 6px 20px 7px; font-size: 13px; color: #4338ca; font-weight: 600;
+        }
+        .progress-label .elapsed { font-variant-numeric: tabular-nums; min-width: 40px; text-align: right; }
+
+        /* -- Help modal -- */
+        .help-btn { padding: 8px 18px; font-size: 0.9em; }
+        .help-overlay {
+            display: none; position: fixed; inset: 0; z-index: 10000;
+            background: rgba(0,0,0,0.45); backdrop-filter: blur(3px);
+            justify-content: center; align-items: flex-start; padding: 40px 20px; overflow-y: auto;
+        }
+        .help-overlay.open { display: flex; }
+        .help-modal {
+            background: #fff; border-radius: 12px; max-width: 820px; width: 100%;
+            padding: 32px 36px 28px; box-shadow: 0 20px 60px rgba(0,0,0,0.25);
+            position: relative; max-height: calc(100vh - 80px); overflow-y: auto;
+        }
+        .help-modal-close {
+            position: absolute; top: 14px; right: 18px;
+            background: none; border: none; font-size: 26px; color: #64748b; cursor: pointer; padding: 0; line-height: 1;
+        }
+        .help-modal-close:hover { color: #1e293b; transform: none; box-shadow: none; }
+        .help-modal h2 { color: var(--primary); margin-bottom: 18px; font-size: 1.5em; }
+        .help-modal h3 { color: #4338ca; margin: 22px 0 8px; font-size: 1.15em; }
+        .help-modal p, .help-modal li { color: var(--gray-700); line-height: 1.65; font-size: 0.95em; }
+        .help-modal ul { padding-left: 22px; margin-bottom: 10px; }
+        .help-modal table { width: 100%; border-collapse: collapse; margin: 10px 0 16px; font-size: 0.9em; }
+        .help-modal th, .help-modal td { border: 1px solid #e2e8f0; padding: 7px 10px; text-align: left; }
+        .help-modal th { background: #f1f5f9; color: #1e293b; font-weight: 600; }
+        .help-modal code { background: #f1f5f9; padding: 2px 6px; border-radius: 3px; font-size: 0.9em; color: #6d28d9; }
+        .help-section { margin-bottom: 6px; }
+
+        /* -- Responsive -- */
         @media (max-width: 960px) {
-            .binding-columns {
-                grid-template-columns: 1fr;
-            }
+            .results-grid { grid-template-columns: 1fr; }
+            .binding-columns { grid-template-columns: 1fr; }
+            .annotation-body { grid-template-columns: 1fr; }
+            .stats { grid-template-columns: 1fr; }
         }
+
+        /* -- Animations -- */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+        .fade-in { animation: fadeIn 0.3s ease forwards; }
+
+        /* -- Tissue expression tags -- */
+        .tissue-tag {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.75em;
+            font-weight: 600;
+            margin: 1px 2px;
+        }
+        .tissue-high { background: #dcfce7; color: #166534; }
+        .tissue-medium { background: #fef9c3; color: #854d0e; }
+        .tissue-low { background: #fee2e2; color: #991b1b; }
+        .tissue-none { background: var(--gray-100); color: var(--gray-500); }
     </style>
 </head>
 <body>
     <div class="container">
+        <!-- Progress bar -->
+        <div class="progress-bar-wrapper" id="progressBar">
+            <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+            <div class="progress-label">
+                <span id="progressMsg">Processing...</span>
+                <span class="elapsed" id="progressElapsed">0s</span>
+            </div>
+        </div>
+
         <header>
-            <h1>🧬 TargetSNAP Web Interface</h1>
-            <p>SNP Impact Analysis on Gene-miRNA Interactions using Local TargetScan</p>
+            <div>
+                <h1>&#x1f9ec; TargetSNAP</h1>
+                <p>SNP Impact Analysis on miRNA Binding &mdash; Live TargetScan 7 Context++ Scoring</p>
+            </div>
+            <button class="btn btn-outline btn-sm" onclick="toggleHelp(true)">&#x2753; Help</button>
         </header>
-        
+
+        <!-- Help modal -->
+        <div class="help-overlay" id="helpOverlay" onclick="if(event.target===this)toggleHelp(false)">
+            <div class="help-modal">
+                <button class="help-modal-close" onclick="toggleHelp(false)">&times;</button>
+                <h2>&#x1f4d6; TargetSNAP &mdash; User Guide</h2>
+
+                <div class="help-section">
+                    <h3>1. Overview</h3>
+                    <p>TargetSNAP analyses how a single-nucleotide polymorphism (SNP) in a gene&#8217;s 3&#8242; UTR affects miRNA binding. It runs the <strong>TargetScan 7</strong> pipeline locally on both the <em>reference</em> and <em>alternate</em> allele sequences, then compares the predicted miRNA target sites to identify gains or losses of miRNA regulation. Each prediction is further validated by <strong>RNAhybrid</strong> minimum free energy (MFE) calculation.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>2. Workflow</h3>
+                    <ul>
+                        <li><strong>Search</strong> &mdash; Enter an rs ID. The tool maps it to overlapping genes and retrieves their 3&#8242; UTR transcript sequences.</li>
+                        <li><strong>Annotations</strong> &mdash; ClinVar clinical significance, GWAS Catalog trait associations, and phastCons46way conservation score are fetched automatically for the SNP.</li>
+                        <li><strong>Select Transcript</strong> &mdash; Choose a transcript isoform. The tool substitutes the REF and ALT alleles into the UTR.</li>
+                        <li><strong>TargetScan Pipeline</strong> &mdash; Seed matching (<code>targetscan_70.pl</code>) identifies miRNA binding sites; context++ scoring (<code>targetscan_70_context_scores.pl</code>) calculates binding strength.</li>
+                        <li><strong>RNAhybrid MFE</strong> &mdash; For each miRNA, <code>RNAhybrid</code> computes the minimum free energy of the miRNA:UTR duplex for both REF and ALT alleles, providing a thermodynamic validation of binding.</li>
+                        <li><strong>Comparison</strong> &mdash; REF and ALT predictions are compared to classify each miRNA as LOF, GOF, or Neutral.</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>3. Context++ Score</h3>
+                    <p>TargetScan produces a <strong>context++ score</strong> for each predicted miRNA&#8211;target interaction. A more negative raw score indicates stronger repression. Internally, TargetSNAP negates this value so that a <em>higher</em> displayed score means stronger predicted binding.</p>
+                    <table>
+                        <tr><th>Raw Context++ Score</th><th>Repression Level</th></tr>
+                        <tr><td>&le; &minus;0.3</td><td>Strong</td></tr>
+                        <tr><td>&minus;0.3 to &minus;0.15</td><td>Moderate</td></tr>
+                        <tr><td>&minus;0.15 to 0</td><td>Weak</td></tr>
+                        <tr><td>&ge; 0</td><td>None</td></tr>
+                    </table>
+                </div>
+
+                <div class="help-section">
+                    <h3>4. RNAhybrid MFE &amp; P-value</h3>
+                    <p><strong>RNAhybrid</strong> predicts the energetically most favourable hybridisation between the miRNA and the UTR region. It is complementary to TargetScan&#8217;s seed-based approach because it considers full-length thermodynamic stability.</p>
+                    <table>
+                        <tr><th>Metric</th><th>Meaning</th></tr>
+                        <tr><td>MFE (kcal/mol)</td><td>Minimum free energy of the most stable duplex. More negative = stronger binding. Displayed as REF&thinsp;/&thinsp;ALT.</td></tr>
+                        <tr><td>p-value</td><td>Probability of observing an equally good or better hit by chance in the 3&#8242; UTR background distribution (<code>-s 3utr_human</code>). Lower = more significant.</td></tr>
+                        <tr><td>&Delta;MFE</td><td>ALT MFE minus REF MFE. Positive = weaker ALT binding (supports LOF). Negative = stronger ALT binding (supports GOF).</td></tr>
+                    </table>
+                </div>
+
+                <div class="help-section">
+                    <h3>5. Priority Score</h3>
+                    <p>Each miRNA receives a composite <strong>priority score</strong> that integrates multiple evidence layers to help you rank the most impactful interactions:</p>
+                    <table>
+                        <tr><th>Component</th><th>Contribution</th></tr>
+                        <tr><td>Context++ &Delta; score</td><td>&Delta; &times; 100 (larger allelic change = higher priority)</td></tr>
+                        <tr><td>Site type weight</td><td>8mer &gt; 7mer-m8 &gt; 7mer-1a &gt; 6mer (&times;5)</td></tr>
+                        <tr><td>Binding change</td><td>+50 if site type or presence changes between alleles</td></tr>
+                        <tr><td>&Delta;MFE (RNAhybrid)</td><td>|&Delta;MFE| &times; 3 &mdash; thermodynamic shift bonus</td></tr>
+                        <tr><td>p-value (RNAhybrid)</td><td>+10 per allele with p &lt; 0.05, +3 if p &lt; 0.20</td></tr>
+                    </table>
+                    <p>Higher priority = stronger combined evidence for a functional impact.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>6. LOF / GOF / Neutral Classification</h3>
+                    <table>
+                        <tr><th>Condition</th><th>Result</th></tr>
+                        <tr><td>SNP overlaps REF site only</td><td><strong>Loss of Function (LOF)</strong></td></tr>
+                        <tr><td>SNP overlaps ALT site only</td><td><strong>Gain of Function (GOF)</strong></td></tr>
+                        <tr><td>Overlaps both + significant score drop</td><td><strong>LOF</strong></td></tr>
+                        <tr><td>Overlaps both + significant score gain</td><td><strong>GOF</strong></td></tr>
+                        <tr><td>Otherwise</td><td><strong>Neutral</strong></td></tr>
+                    </table>
+                </div>
+
+                <div class="help-section">
+                    <h3>7. SNP Annotations</h3>
+                    <ul>
+                        <li><strong>ClinVar</strong> &mdash; Clinical significance from NCBI ClinVar (pathogenic / benign / VUS). Queried via eUtils API.</li>
+                        <li><strong>GWAS Catalog</strong> &mdash; Genome-wide association study traits linked to the SNP via the EBI GWAS REST API. Shows p-values and risk alleles.</li>
+                        <li><strong>Conservation</strong> &mdash; PhastCons 46-way vertebrate conservation at the SNP position (UCSC REST). Score 0&ndash;1; higher = more conserved across species. Highly conserved SNP positions are more likely to be functionally important.</li>
+                    </ul>
+                </div>
+
+                <div class="help-section">
+                    <h3>8. Tissue Expression Filter</h3>
+                    <p>Use the tissue dropdown to highlight miRNAs known to be highly expressed in a specific tissue/organ. Curated from TCGA and miRmine expression databases. miRNAs enriched in the selected tissue are marked with a <span style="background:#dcfce7;padding:1px 6px;border-radius:8px;font-size:0.85em;color:#166534">Tissue &#10003;</span> badge and sorted first; non-relevant miRNAs are dimmed.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>9. Site Types</h3>
+                    <table>
+                        <tr><th>Site Type</th><th>Description</th></tr>
+                        <tr><td>8mer-1a</td><td>Exact match to positions 2&#8211;8 + A at position 1 (strongest)</td></tr>
+                        <tr><td>7mer-m8</td><td>Match to positions 2&#8211;8</td></tr>
+                        <tr><td>7mer-1a</td><td>Match to positions 2&#8211;7 + A at position 1</td></tr>
+                        <tr><td>6mer</td><td>Match to positions 2&#8211;7 only (weakest)</td></tr>
+                    </table>
+                </div>
+
+                <div class="help-section">
+                    <h3>10. Exporting Results</h3>
+                    <p>Click the download buttons (CSV, TSV, or JSON) above the results to export all LOF, GOF, and neutral miRNA records. The export includes all columns: context++ scores, RNAhybrid MFE, p-values, &Delta;MFE, priority scores, site types, and binding change annotations.</p>
+                </div>
+
+                <div class="help-section">
+                    <h3>11. Tips</h3>
+                    <ul>
+                        <li>Large UTRs (&gt; 3000 bp) may take several minutes on first run. Results are cached afterward.</li>
+                        <li>Use <em>Top 10 / Show All</em> to quickly see the most impactful miRNAs vs. the full list.</li>
+                        <li>Use the <em>&ldquo;Show only changed bindings&rdquo;</em> toggle to filter to miRNAs with allelic differences.</li>
+                        <li>Neutral section is capped at 100 entries &mdash; total count is shown in the header.</li>
+                        <li>ClinVar/GWAS lookups run asynchronously and won&#8217;t slow down the main analysis.</li>
+                        <li>RNAhybrid runs in parallel for all miRNAs during the pipeline &mdash; no extra wait.</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
         <main>
             <div class="search-section">
                 <div class="search-box">
-                    <input 
-                        type="text" 
-                        id="rsInput" 
-                        placeholder="Enter rs ID (e.g., rs12345678)"
-                        autocomplete="off"
-                    >
-                    <button onclick="searchSNP()">Search SNP</button>
+                    <input type="text" id="rsInput" placeholder="Enter rs ID (e.g., rs12345678)" autocomplete="off">
+                    <button class="btn" onclick="searchSNP()">Search SNP</button>
                 </div>
                 <div class="error" id="errorMsg"></div>
-                <div class="loading" id="loading">
-                    <div class="spinner"></div>
-                    <p>Processing...</p>
-                </div>
             </div>
-            
+
             <div class="results-grid" id="resultsGrid" style="display: none;">
                 <div class="panel">
-                    <h3>📍 Mapped Genes</h3>
+                    <h3>&#x1f4cd; Mapped Genes</h3>
                     <ul class="gene-list" id="geneList"></ul>
                 </div>
-                
                 <div class="panel">
-                    <h3>🧬 Gene Transcripts</h3>
+                    <h3>&#x1f9ec; Gene Transcripts</h3>
                     <ul class="transcript-list" id="transcriptList"></ul>
                 </div>
             </div>
-            
-            <div class="results-section" id="resultsSection">
-                <h2>📊 miRNA Targeting Analysis Results</h2>
 
-                <div class="results-controls">
-                    <input type="checkbox" id="changedOnlyToggle">
-                    <label for="changedOnlyToggle">Show only changed Ref/Alt bindings</label>
+            <!-- SNP Annotation Banner -->
+            <div class="annotation-banner" id="annotationBanner">
+                <div class="annotation-header">&#x1f52c; SNP Annotations &mdash; <span id="annotationRsId"></span></div>
+                <div class="annotation-body">
+                    <div class="annotation-card" id="clinvarCard">
+                        <h4>&#x1f3e5; ClinVar</h4>
+                        <div id="clinvarContent"><span style="color:var(--gray-500)">Loading...</span></div>
+                    </div>
+                    <div class="annotation-card" id="gwasCard">
+                        <h4>&#x1f4ca; GWAS Catalog</h4>
+                        <div id="gwasContent"><span style="color:var(--gray-500)">Loading...</span></div>
+                    </div>
+                    <div class="annotation-card" id="conservationCard">
+                        <h4>&#x1f9ec; Conservation</h4>
+                        <div id="conservationContent"><span style="color:var(--gray-500)">Loading...</span></div>
+                    </div>
                 </div>
-                
+            </div>
+
+            <div class="results-section" id="resultsSection">
+                <h2>&#x1f4ca; miRNA Targeting Analysis Results</h2>
+
+                <!-- Download buttons -->
+                <div style="display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center;">
+                    <span style="font-weight:600;color:var(--gray-700);font-size:0.9em;">Download:</span>
+                    <button class="btn btn-sm btn-outline" onclick="downloadResults('csv')">CSV</button>
+                    <button class="btn btn-sm btn-outline" onclick="downloadResults('tsv')">TSV</button>
+                    <button class="btn btn-sm btn-outline" onclick="downloadResults('json')">JSON</button>
+                </div>
+
+                <!-- Filter bar -->
+                <div class="filter-bar">
+                    <label for="changedOnlyToggle">
+                        <input type="checkbox" id="changedOnlyToggle" style="accent-color:var(--primary)">
+                        Show only changed bindings
+                    </label>
+                    <label for="tissueFilter">Tissue:</label>
+                    <select id="tissueFilter" onchange="applyTissueFilter()">
+                        <option value="">All tissues</option>
+                        <option value="brain">Brain</option>
+                        <option value="liver">Liver</option>
+                        <option value="heart">Heart</option>
+                        <option value="kidney">Kidney</option>
+                        <option value="lung">Lung</option>
+                        <option value="breast">Breast</option>
+                        <option value="colon">Colon</option>
+                        <option value="blood">Blood / Immune</option>
+                        <option value="muscle">Muscle</option>
+                        <option value="skin">Skin</option>
+                        <option value="pancreas">Pancreas</option>
+                        <option value="prostate">Prostate</option>
+                        <option value="ovary">Ovary</option>
+                        <option value="thyroid">Thyroid</option>
+                        <option value="stomach">Stomach</option>
+                    </select>
+                    <span class="filter-info" id="filterInfo"></span>
+                </div>
+
                 <div class="stats">
                     <div class="stat-box">
                         <div>Ref Targets</div>
@@ -524,21 +716,32 @@
                         <div class="stat-value" id="totalChanges">-</div>
                     </div>
                 </div>
-                
+
                 <div class="effect-section">
-                    <div class="effect-title loss-title">❌ Loss of Function (miRNAs)</div>
+                    <div class="section-controls">
+                        <div class="effect-title loss-title">&#x25bc; Loss of Function (miRNAs) <span id="lofCount"></span></div>
+                        <button class="top10-toggle active" id="lofTop10" onclick="toggleTop10('lof', this)">Show All</button>
+                    </div>
                     <div id="lofContainer"></div>
                 </div>
-                
+
                 <div class="effect-section">
-                    <div class="effect-title gain-title">✅ Gain of Function (miRNAs)</div>
+                    <div class="section-controls">
+                        <div class="effect-title gain-title">&#x25b2; Gain of Function (miRNAs) <span id="gofCount"></span></div>
+                        <button class="top10-toggle active" id="gofTop10" onclick="toggleTop10('gof', this)">Show All</button>
+                    </div>
                     <div id="gofContainer"></div>
                 </div>
 
                 <div class="effect-section">
-                    <div class="effect-title neutral-title">ℹ️ Stable / Neutral miRNAs</div>
+                    <div class="section-controls">
+                        <div class="effect-title neutral-title">&#x2500; Stable / Neutral miRNAs <span id="neutralCount"></span></div>
+                        <button class="top10-toggle active" id="neutralTop10" onclick="toggleTop10('neutral', this)">Show All</button>
+                    </div>
                     <div id="neutralContainer"></div>
                 </div>
+
+
 
                 <div class="eqtl-section" id="eqtlSection">
                     <h3 style="color:#1e3a8a; margin-bottom: 10px;">eQTL / DAE Evidence (GTEx)</h3>
@@ -548,340 +751,462 @@
             </div>
         </main>
     </div>
-    
+
     <script>
         let currentSNP = null;
         let currentGene = null;
         let currentComparisonData = null;
-        
+        let loadingCount = 0;
+        let activeAbortController = null;
+        let loadingTimerInterval = null;
+        let annotationData = null;
+        let top10State = { lof: true, gof: true, neutral: true };
+
+        // Tissue-specific highly-expressed miRNAs (curated from TCGA/miRmine public data)
+        const TISSUE_MIRNAS = {
+            brain: ['hsa-miR-128-3p','hsa-miR-124-3p','hsa-miR-9-5p','hsa-miR-132-3p','hsa-miR-134-5p','hsa-miR-218-5p','hsa-miR-138-5p','hsa-miR-137','hsa-miR-219a-5p','hsa-miR-7-5p','hsa-miR-338-3p','hsa-miR-129-5p','hsa-miR-135a-5p','hsa-miR-153-3p','hsa-miR-125b-5p'],
+            liver: ['hsa-miR-122-5p','hsa-miR-192-5p','hsa-miR-194-5p','hsa-miR-885-5p','hsa-miR-483-3p','hsa-miR-148a-3p','hsa-miR-22-3p','hsa-miR-101-3p','hsa-miR-30a-5p','hsa-miR-27b-3p'],
+            heart: ['hsa-miR-1-3p','hsa-miR-133a-3p','hsa-miR-133b','hsa-miR-208a-3p','hsa-miR-208b-3p','hsa-miR-499a-5p','hsa-miR-143-3p','hsa-miR-145-5p','hsa-miR-22-3p','hsa-miR-30d-5p'],
+            kidney: ['hsa-miR-192-5p','hsa-miR-194-5p','hsa-miR-215-5p','hsa-miR-204-5p','hsa-miR-30a-5p','hsa-miR-10a-5p','hsa-miR-148a-3p','hsa-miR-200b-3p','hsa-miR-429','hsa-miR-141-3p'],
+            lung: ['hsa-miR-34c-5p','hsa-miR-34b-5p','hsa-miR-449a','hsa-miR-449b-5p','hsa-miR-200a-3p','hsa-miR-200b-3p','hsa-miR-141-3p','hsa-miR-205-5p','hsa-miR-375-3p','hsa-miR-21-5p'],
+            breast: ['hsa-miR-205-5p','hsa-miR-200c-3p','hsa-miR-141-3p','hsa-miR-375-3p','hsa-miR-10b-5p','hsa-miR-21-5p','hsa-miR-155-5p','hsa-miR-145-5p','hsa-miR-99a-5p','hsa-miR-125b-5p'],
+            colon: ['hsa-miR-192-5p','hsa-miR-194-5p','hsa-miR-215-5p','hsa-miR-196b-5p','hsa-miR-375-3p','hsa-miR-200b-3p','hsa-miR-429','hsa-miR-141-3p','hsa-miR-21-5p','hsa-miR-29a-3p'],
+            blood: ['hsa-miR-223-3p','hsa-miR-150-5p','hsa-miR-142-3p','hsa-miR-142-5p','hsa-miR-155-5p','hsa-miR-146a-5p','hsa-miR-181a-5p','hsa-miR-16-5p','hsa-miR-21-5p','hsa-miR-15a-5p'],
+            muscle: ['hsa-miR-1-3p','hsa-miR-133a-3p','hsa-miR-133b','hsa-miR-206','hsa-miR-486-5p','hsa-miR-499a-5p','hsa-miR-208b-3p','hsa-miR-143-3p','hsa-miR-145-5p','hsa-miR-10b-5p'],
+            skin: ['hsa-miR-203a-3p','hsa-miR-205-5p','hsa-miR-200a-3p','hsa-miR-200b-3p','hsa-miR-141-3p','hsa-miR-21-5p','hsa-miR-31-5p','hsa-miR-184','hsa-miR-375-3p','hsa-miR-125b-5p'],
+            pancreas: ['hsa-miR-375-3p','hsa-miR-216a-5p','hsa-miR-216b-5p','hsa-miR-217','hsa-miR-148a-3p','hsa-miR-192-5p','hsa-miR-194-5p','hsa-miR-215-5p','hsa-miR-21-5p','hsa-miR-29a-3p'],
+            prostate: ['hsa-miR-205-5p','hsa-miR-143-3p','hsa-miR-145-5p','hsa-miR-221-3p','hsa-miR-222-3p','hsa-miR-375-3p','hsa-miR-141-3p','hsa-miR-21-5p','hsa-miR-106b-5p','hsa-miR-148a-3p'],
+            ovary: ['hsa-miR-200c-3p','hsa-miR-200a-3p','hsa-miR-200b-3p','hsa-miR-141-3p','hsa-miR-429','hsa-miR-21-5p','hsa-miR-let-7a-5p','hsa-miR-199a-3p','hsa-miR-214-3p','hsa-miR-125b-5p'],
+            thyroid: ['hsa-miR-146b-5p','hsa-miR-221-3p','hsa-miR-222-3p','hsa-miR-21-5p','hsa-miR-375-3p','hsa-miR-204-5p','hsa-miR-7-5p','hsa-miR-451a','hsa-miR-144-3p','hsa-miR-148a-3p'],
+            stomach: ['hsa-miR-192-5p','hsa-miR-194-5p','hsa-miR-215-5p','hsa-miR-375-3p','hsa-miR-200b-3p','hsa-miR-21-5p','hsa-miR-196a-5p','hsa-miR-29a-3p','hsa-miR-141-3p','hsa-miR-200c-3p'],
+        };
+
         async function searchSNP() {
             const rsId = document.getElementById('rsInput').value.trim();
-            
-            if (!rsId) {
-                showError('Please enter an rs ID');
-                return;
-            }
-            
-            showLoading(true);
-            
+            if (!rsId) { showError('Please enter an rs ID'); return; }
+
+            showLoading(true, 'Searching SNP...');
             try {
                 const response = await fetch('/api/search-rs', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ rs_id: rsId })
                 });
-                
                 const data = await response.json();
-                
-                if (!response.ok) {
-                    showError(data.error || 'Error searching SNP');
-                    showLoading(false);
-                    return;
-                }
-                
+                if (!response.ok) { showError(data.error || 'Error searching SNP'); showLoading(false); return; }
+
                 currentSNP = data;
                 displayGenes(data.genes);
                 document.getElementById('resultsGrid').style.display = 'grid';
-                
+
+                // Async: fetch SNP annotations (ClinVar, GWAS, conservation)
+                if (data.genes && data.genes.length > 0) {
+                    fetchAnnotations(rsId, data.genes[0].chromosome, data.genes[0].position);
+                }
             } catch (error) {
                 showError('Network error: ' + error.message);
             } finally {
                 showLoading(false);
             }
         }
-        
+
+        async function fetchAnnotations(rsId, chromosome, position) {
+            const banner = document.getElementById('annotationBanner');
+            document.getElementById('annotationRsId').textContent = rsId;
+            banner.classList.add('visible');
+
+            document.getElementById('clinvarContent').innerHTML = '<span style="color:var(--gray-500)">Loading...</span>';
+            document.getElementById('gwasContent').innerHTML = '<span style="color:var(--gray-500)">Loading...</span>';
+            document.getElementById('conservationContent').innerHTML = '<span style="color:var(--gray-500)">Loading...</span>';
+
+            try {
+                const resp = await fetch('/api/snp-annotations', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ rs_id: rsId, chromosome: String(chromosome), position: position })
+                });
+                annotationData = await resp.json();
+                renderAnnotations(annotationData);
+            } catch (e) {
+                document.getElementById('clinvarContent').innerHTML = '<span style="color:var(--gray-500)">Unavailable</span>';
+                document.getElementById('gwasContent').innerHTML = '<span style="color:var(--gray-500)">Unavailable</span>';
+                document.getElementById('conservationContent').innerHTML = '<span style="color:var(--gray-500)">Unavailable</span>';
+            }
+        }
+
+        function renderAnnotations(data) {
+            // ClinVar
+            const clinEl = document.getElementById('clinvarContent');
+            if (data.clinvar && data.clinvar.length > 0) {
+                clinEl.innerHTML = data.clinvar.map(function(c) {
+                    var sig = (c.clinical_significance || '').toLowerCase();
+                    var badgeClass = 'badge-vus';
+                    if (sig.indexOf('pathogenic') >= 0 && sig.indexOf('benign') < 0) badgeClass = 'badge-pathogenic';
+                    else if (sig.indexOf('benign') >= 0) badgeClass = 'badge-benign';
+                    return '<div style="margin-bottom:6px;">' +
+                        '<span class="badge ' + badgeClass + '">' + escapeHtml(c.clinical_significance || 'Unknown') + '</span> ' +
+                        c.conditions.map(function(cond) { return '<span style="font-size:0.85em;color:var(--gray-700)">' + escapeHtml(cond) + '</span>'; }).join(', ') +
+                    '</div>';
+                }).join('');
+            } else {
+                clinEl.innerHTML = '<span style="color:var(--gray-500)">No ClinVar entries found</span>';
+            }
+
+            // GWAS
+            var gwasEl = document.getElementById('gwasContent');
+            if (data.gwas && data.gwas.length > 0) {
+                gwasEl.innerHTML = data.gwas.slice(0, 8).map(function(g) {
+                    var traits = (g.traits || []).join(', ');
+                    var pval = g.p_value ? 'p=' + Number(g.p_value).toExponential(1) : '';
+                    return '<span class="badge badge-gwas">' + escapeHtml(traits) + '</span> <span style="font-size:0.78em;color:var(--gray-500)">' + pval + '</span>';
+                }).join('<br>');
+            } else {
+                gwasEl.innerHTML = '<span style="color:var(--gray-500)">No GWAS associations found</span>';
+            }
+
+            // Conservation
+            var consEl = document.getElementById('conservationContent');
+            if (data.conservation && data.conservation.phastCons46way !== null) {
+                var score = data.conservation.phastCons46way;
+                var pct = Math.round(score * 100);
+                var interp = data.conservation.interpretation;
+                var badgeClass = score > 0.5 ? 'badge-conserved' : 'badge-not-conserved';
+                consEl.innerHTML =
+                    '<span class="badge ' + badgeClass + '">' + interp + '</span>' +
+                    '<div style="font-size:0.9em;margin-top:4px;">phastCons46way: <strong>' + score.toFixed(4) + '</strong></div>' +
+                    '<div class="conservation-bar"><div class="conservation-fill" style="width:' + pct + '%"></div></div>';
+            } else {
+                consEl.innerHTML = '<span style="color:var(--gray-500)">Conservation data unavailable</span>';
+            }
+        }
+
         function displayGenes(genes) {
-            const list = document.getElementById('geneList');
+            var list = document.getElementById('geneList');
             list.innerHTML = '';
-            
-            genes.forEach((gene, index) => {
-                const item = document.createElement('li');
-                item.className = 'gene-item';
-                if (index === 0) item.classList.add('selected');
-                
-                item.innerHTML = `
-                    <div class="gene-name">${gene.gene_name}</div>
-                    <div class="gene-meta">
-                        Chr${gene.chromosome}:${gene.position.toLocaleString()}<br/>
-                        ${gene.ref_allele_display || gene.ref_allele}→${gene.alt_allele_display || gene.alt_allele} (${gene.strand} strand)
-                        ${gene.strand === '-' ? `<br/>genomic: ${gene.ref_allele_genomic || gene.ref_allele}→${gene.alt_allele_genomic || gene.alt_allele}` : ''}
-                    </div>
-                `;
-                
-                item.onclick = () => selectGene(gene, item);
-                
+            genes.forEach(function(gene, index) {
+                var item = document.createElement('li');
+                item.className = 'gene-item' + (index === 0 ? ' selected' : '');
+                item.innerHTML =
+                    '<div class="gene-name">' + escapeHtml(gene.gene_name) + '</div>' +
+                    '<div class="gene-meta">' +
+                        'Chr' + gene.chromosome + ':' + gene.position.toLocaleString() + '<br/>' +
+                        (gene.ref_allele_display || gene.ref_allele) + '&rarr;' + (gene.alt_allele_display || gene.alt_allele) + ' (' + gene.strand + ' strand)' +
+                        (gene.strand === '-' ? '<br/>genomic: ' + (gene.ref_allele_genomic || gene.ref_allele) + '&rarr;' + (gene.alt_allele_genomic || gene.alt_allele) : '') +
+                    '</div>';
+                item.onclick = function() { selectGene(gene, item); };
                 if (index === 0) selectGene(gene, item);
-                
                 list.appendChild(item);
             });
         }
-        
+
         async function selectGene(gene, element) {
-            document.querySelectorAll('.gene-item').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.gene-item').forEach(function(el) { el.classList.remove('selected'); });
             element.classList.add('selected');
-            
             currentGene = gene;
-            showLoading(true);
-            
+            showLoading(true, 'Loading transcripts...');
             try {
-                const response = await fetch('/api/gene-transcripts', {
+                var response = await fetch('/api/gene-transcripts', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ gene_id: gene.gene_id })
                 });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    displayTranscripts(data.transcripts);
-                } else {
-                    showError(data.error);
-                }
-                
+                var data = await response.json();
+                if (response.ok) displayTranscripts(data.transcripts);
+                else showError(data.error);
             } catch (error) {
                 showError('Error: ' + error.message);
             } finally {
                 showLoading(false);
             }
         }
-        
+
         function displayTranscripts(transcripts) {
-            const list = document.getElementById('transcriptList');
+            var list = document.getElementById('transcriptList');
             list.innerHTML = '';
-            
-            transcripts.forEach((transcript, index) => {
-                const item = document.createElement('li');
-                item.className = 'transcript-item';
-                if (index === 0) item.classList.add('selected');
-                
-                item.innerHTML = `
-                    <div class="gene-name">${transcript.transcript_name}</div>
-                    <div class="gene-meta">
-                        ${transcript.transcript_id}<br/>
-                        Strand: ${transcript.strand} | 3'UTR: ${transcript.utr_length ? transcript.utr_length + 'bp' : 'NA'}
-                    </div>
-                `;
-                
-                item.onclick = () => selectTranscript(transcript, item);
-                
-                if (index === 0) selectTranscript(transcript, item);
-                
+            transcripts.forEach(function(transcript, index) {
+                var item = document.createElement('li');
+                item.className = 'transcript-item' + (index === 0 ? ' selected' : '');
+                item.innerHTML =
+                    '<div class="gene-name">' + escapeHtml(transcript.transcript_name) + '</div>' +
+                    '<div class="gene-meta">' +
+                        transcript.transcript_id + '<br/>' +
+                        'Strand: ' + transcript.strand + ' | 3\'UTR: ' + (transcript.utr_length ? transcript.utr_length + 'bp' : 'NA') +
+                    '</div>';
+                item.onclick = function() { selectTranscript(transcript, item); };
                 list.appendChild(item);
             });
         }
-        
+
         async function selectTranscript(transcript, element) {
-            document.querySelectorAll('.transcript-item').forEach(el => el.classList.remove('selected'));
+            document.querySelectorAll('.transcript-item').forEach(function(el) { el.classList.remove('selected'); });
             element.classList.add('selected');
-            
-            showLoading(true);
-            
+
+            if (activeAbortController) activeAbortController.abort();
+            activeAbortController = new AbortController();
+
+            // Reset enrichment state
+            enrichmentLoaded = false;
+            enrichmentData = null;
+
+            showLoading(true, 'Running TargetScan pipeline \u2014 this may take several minutes for large UTRs...');
             try {
-                const response = await fetch('/api/compare-alleles', {
+                var response = await fetch('/api/compare-alleles', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         rs_id: currentSNP.rs_id,
                         gene_id: currentGene.gene_id,
                         transcript_id: transcript.transcript_id
-                    })
+                    }),
+                    signal: activeAbortController.signal
                 });
-                
-                const data = await response.json();
-                
-                if (response.ok) {
-                    displayResults(data);
-                } else {
-                    showError(data.error);
-                }
-                
+                var data = await response.json();
+                console.log('compare-alleles:', response.status, 'LOF:', (data.loss_of_function||[]).length, 'GOF:', (data.gain_of_function||[]).length, 'Neutral:', (data.neutral||[]).length);
+                if (response.ok) displayResults(data);
+                else showError(data.error);
             } catch (error) {
+                if (error.name === 'AbortError') { console.log('Request aborted'); return; }
                 showError('Error: ' + error.message);
             } finally {
                 showLoading(false);
             }
         }
-        
+
         function displayResults(data) {
             currentComparisonData = data;
             document.getElementById('resultsSection').style.display = 'block';
-            
+
             document.getElementById('refTargetsCount').textContent = data.total_ref_targets;
             document.getElementById('mutTargetsCount').textContent = data.total_mut_targets;
-            document.getElementById('totalChanges').textContent = 
+            document.getElementById('totalChanges').textContent =
                 data.loss_of_function.length + data.gain_of_function.length;
 
+            // Reset tissue filter
+            document.getElementById('tissueFilter').value = '';
+            document.getElementById('filterInfo').textContent = '';
+
             renderMiRNASections();
-            
             document.getElementById('resultsSection').scrollIntoView({ behavior: 'smooth' });
         }
 
+        function applyTissueFilter() {
+            var tissue = document.getElementById('tissueFilter').value;
+            var infoEl = document.getElementById('filterInfo');
+            if (tissue) {
+                var mirnaList = TISSUE_MIRNAS[tissue] || [];
+                infoEl.textContent = 'Highlighting ' + mirnaList.length + ' tissue-enriched miRNAs';
+            } else {
+                infoEl.textContent = '';
+            }
+            renderMiRNASections();
+        }
 
-
-
-
-
+        function toggleTop10(section, btn) {
+            top10State[section] = !top10State[section];
+            btn.classList.toggle('active', top10State[section]);
+            btn.textContent = top10State[section] ? 'Show All' : 'Top 10';
+            renderMiRNASections();
+        }
 
         function renderMiRNASections() {
             if (!currentComparisonData) return;
-            const changedOnly = document.getElementById('changedOnlyToggle').checked;
+            var changedOnly = document.getElementById('changedOnlyToggle').checked;
+            var tissue = document.getElementById('tissueFilter').value;
 
-            displayMiRNAList(
-                currentComparisonData.loss_of_function,
-                'lofContainer',
-                changedOnly ? 'No changed loss-of-function bindings' : 'No loss-of-function',
-                changedOnly
-            );
+            var lofLimit = top10State.lof ? 10 : 0;
+            var gofLimit = top10State.gof ? 10 : 0;
+            var neutralLimit = top10State.neutral ? 10 : 0;
 
-            displayMiRNAList(
-                currentComparisonData.gain_of_function,
-                'gofContainer',
-                changedOnly ? 'No changed gain-of-function bindings' : 'No gain-of-function',
-                changedOnly
-            );
+            displayMiRNAList(currentComparisonData.loss_of_function, 'lofContainer',
+                changedOnly ? 'No changed loss-of-function bindings' : 'No loss-of-function', changedOnly, '', tissue, lofLimit);
 
-            // Always show neutral/stable bindings so users still see miRNAs
-            // even when there are no LOF/GOF changes.
-            displayMiRNAList(
-                currentComparisonData.neutral,
-                'neutralContainer',
-                'No neutral/stable miRNAs found',
-                false
-            );
+            displayMiRNAList(currentComparisonData.gain_of_function, 'gofContainer',
+                changedOnly ? 'No changed gain-of-function bindings' : 'No gain-of-function', changedOnly, '', tissue, gofLimit);
+
+            var totalNeutral = currentComparisonData.total_neutral || currentComparisonData.neutral.length;
+            var shownNeutral = currentComparisonData.neutral.length;
+            var neutralNote = totalNeutral > shownNeutral ? ' (showing ' + shownNeutral + ' of ' + totalNeutral + ')' : '';
+            displayMiRNAList(currentComparisonData.neutral, 'neutralContainer',
+                'No neutral/stable miRNAs found', false, neutralNote, tissue, neutralLimit);
+
+            // Update count badges
+            document.getElementById('lofCount').textContent = '(' + currentComparisonData.loss_of_function.length + ')';
+            document.getElementById('gofCount').textContent = '(' + currentComparisonData.gain_of_function.length + ')';
+            document.getElementById('neutralCount').textContent = '(' + (totalNeutral) + ')';
         }
-        
-        function displayMiRNAList(mirnas, containerId, emptyMsg, changedOnly) {
-            const container = document.getElementById(containerId);
-            
+
+        function getTissueRelevance(mirnaId, tissue) {
+            if (!tissue || !TISSUE_MIRNAS[tissue]) return null;
+            var list = TISSUE_MIRNAS[tissue];
+            var id = (mirnaId || '').toLowerCase();
+            for (var i = 0; i < list.length; i++) {
+                var m = list[i].toLowerCase();
+                if (id === m || id.indexOf(m.replace('hsa-','')) >= 0) return 'high';
+            }
+            return 'low';
+        }
+
+        function displayMiRNAList(mirnas, containerId, emptyMsg, changedOnly, headerNote, tissue, limit) {
+            var container = document.getElementById(containerId);
             if (!mirnas || mirnas.length === 0) {
-                container.innerHTML = `<div class="empty-msg">${emptyMsg}</div>`;
+                container.innerHTML = '<div class="empty-msg">' + emptyMsg + '</div>';
                 return;
             }
-            
+
             container.innerHTML = '';
-            let rendered = 0;
-            
-            mirnas.forEach(mirna => {
-                if (changedOnly && !hasBindingDifference(mirna)) {
-                    return;
+            if (headerNote) {
+                var note = document.createElement('div');
+                note.style.cssText = 'font-size:0.85em;color:#6b7280;margin-bottom:8px;';
+                note.textContent = headerNote;
+                container.appendChild(note);
+            }
+
+            // Sort: tissue-relevant first if filter active
+            var sorted = mirnas.slice();
+            if (tissue) {
+                sorted.sort(function(a, b) {
+                    var aRel = getTissueRelevance(a.mirna_id, tissue) === 'high' ? 0 : 1;
+                    var bRel = getTissueRelevance(b.mirna_id, tissue) === 'high' ? 0 : 1;
+                    return aRel - bRel;
+                });
+            }
+
+            var rendered = 0;
+            sorted.forEach(function(mirna) {
+                if (limit && rendered >= limit) return;
+                if (changedOnly && !hasBindingDifference(mirna)) return;
+
+                var score = Number(mirna.context_score || 0).toFixed(3);
+                var tissueRel = getTissueRelevance(mirna.mirna_id, tissue);
+                var tissueTag = tissueRel === 'high'
+                    ? '<span class="tissue-tag tissue-high">Tissue \u2713</span>'
+                    : (tissue ? '<span class="tissue-tag tissue-none">Other</span>' : '');
+
+                var item = document.createElement('details');
+                item.className = 'mirna-dropdown fade-in';
+                if (tissue && tissueRel !== 'high') {
+                    item.style.opacity = '0.55';
                 }
-
-                const score = Number(mirna.context_score || 0).toFixed(3);
-                const item = document.createElement('details');
-                item.className = 'mirna-dropdown';
-                item.innerHTML = `
-                    <summary class="mirna-summary">
-                        <span class="mirna-main">${escapeHtml(mirna.mirna_id || 'Unknown miRNA')}</span>
-                        <span class="mirna-score">Score: ${score}</span>
-                    </summary>
-                    <div class="mirna-details">
-                        ${formatMirnaDetails(mirna)}
-                    </div>
-                `;
-
+                item.innerHTML =
+                    '<summary class="mirna-summary">' +
+                        '<span class="mirna-main">' + escapeHtml(mirna.mirna_id || 'Unknown miRNA') + ' ' + tissueTag + '</span>' +
+                        '<span class="mirna-badges">' +
+                            '<span class="meta-badge">' + escapeHtml(mirna.evidence_level || 'low') + '</span>' +
+                            '<span class="meta-badge">' + escapeHtml(mirna.site_type || 'NA') + '</span>' +
+                            '<span class="mirna-score">Score: ' + score + '</span>' +
+                            (mirna.ref_mfe != null || mirna.alt_mfe != null ? '<span class="mirna-score" style="color:#7c3aed">MFE: ' + (mirna.ref_mfe != null ? mirna.ref_mfe.toFixed(1) : '-') + '/' + (mirna.alt_mfe != null ? mirna.alt_mfe.toFixed(1) : '-') + ' <small style="color:#9ca3af">p ' + (mirna.ref_pvalue != null ? mirna.ref_pvalue.toFixed(3) : '-') + '/' + (mirna.alt_pvalue != null ? mirna.alt_pvalue.toFixed(3) : '-') + '</small></span>' : '') +
+                        '</span>' +
+                    '</summary>' +
+                    '<div class="mirna-details">' + formatMirnaDetails(mirna) + '</div>';
                 container.appendChild(item);
-                rendered += 1;
+                rendered++;
             });
 
             if (rendered === 0) {
-                container.innerHTML = `<div class="empty-msg">${emptyMsg}</div>`;
+                container.innerHTML = '<div class="empty-msg">' + emptyMsg + '</div>';
             }
         }
 
         function formatMirnaDetails(mirna) {
-            const refScore = Number(mirna.ref_score || 0).toFixed(3);
-            const mutScore = Number(mirna.mut_score || 0).toFixed(3);
-            const delta = Math.abs(Number(mirna.score_change || 0)).toFixed(3);
-            const bindingColumns = formatBindingComparison(mirna);
+            var refScore = Number(mirna.ref_score || 0).toFixed(3);
+            var mutScore = Number(mirna.mut_score || 0).toFixed(3);
+            var delta = Math.abs(Number(mirna.score_change || 0)).toFixed(3);
+            var bindingColumns = formatBindingComparison(mirna);
 
-            return `
-                <div class="mirna-header">
-                    <div>
-                        <strong>${escapeHtml(mirna.mirna_id || '')}</strong>
-                        <span class="meta-badge">${escapeHtml(mirna.evidence_level || 'low')} evidence</span>
-                        <span class="meta-badge">Priority ${Number(mirna.priority_score || 0).toFixed(1)}</span>
-                        <span class="meta-badge">${escapeHtml(mirna.site_type || 'NA')}</span>
-                    </div>
-                    <div>
-                        Ref: <span class="score-badge">${refScore}</span>
-                        Alt: <span class="score-badge">${mutScore}</span>
-                        Δ: <span class="score-badge">${delta}</span>
-                    </div>
-                </div>
-                ${bindingColumns}
-            `;
+            return '<div class="mirna-header">' +
+                '<div>' +
+                    '<strong>' + escapeHtml(mirna.mirna_id || '') + '</strong> ' +
+                    '<span class="meta-badge">' + escapeHtml(mirna.evidence_level || 'low') + ' evidence</span> ' +
+                    '<span class="meta-badge">Priority ' + Number(mirna.priority_score || 0).toFixed(1) + '</span>' +
+                '</div>' +
+                '<div>' +
+                    'Ref: <span class="score-badge">' + refScore + '</span> ' +
+                    'Alt: <span class="score-badge">' + mutScore + '</span> ' +
+                    '\u0394: <span class="score-badge">' + delta + '</span>' +
+                    (mirna.ref_mfe != null || mirna.alt_mfe != null ?
+                        ' <span style="color:#7c3aed;font-size:0.88em;margin-left:8px">MFE: ' + (mirna.ref_mfe != null ? mirna.ref_mfe.toFixed(1) : '\u2013') + ' / ' + (mirna.alt_mfe != null ? mirna.alt_mfe.toFixed(1) : '\u2013') + ' kcal/mol' +
+                        (mirna.mfe_delta != null ? ' (\u0394' + (mirna.mfe_delta > 0 ? '+' : '') + mirna.mfe_delta.toFixed(1) + ')' : '') +
+                        '</span>' +
+                        ' <span style="color:var(--gray-500);font-size:0.8em">p: ' + (mirna.ref_pvalue != null ? mirna.ref_pvalue.toFixed(3) : '\u2013') + ' / ' + (mirna.alt_pvalue != null ? mirna.alt_pvalue.toFixed(3) : '\u2013') + '</span>'
+                        : '') +
+                '</div>' +
+            '</div>' + bindingColumns;
         }
 
         function formatBindingComparison(mirna) {
-            const ref = {
+            var ref = {
                 siteType: mirna.ref_site_type || 'NA',
                 mirnaSeq: mirna.ref_mature_mirna_sequence || '',
                 utrRegion: mirna.ref_utr_region || '',
                 pairing: mirna.ref_pairing || ''
             };
-            const alt = {
+            var alt = {
                 siteType: mirna.alt_site_type || 'NA',
                 mirnaSeq: mirna.alt_mature_mirna_sequence || '',
                 utrRegion: mirna.alt_utr_region || '',
                 pairing: mirna.alt_pairing || ''
             };
 
-            const hasContent = Boolean(
+            var hasContent = Boolean(
                 ref.siteType.trim() || ref.mirnaSeq.trim() || ref.utrRegion.trim() || ref.pairing.trim() ||
                 alt.siteType.trim() || alt.mirnaSeq.trim() || alt.utrRegion.trim() || alt.pairing.trim()
             );
 
             if (!hasContent) {
-                return `<div class="binding-block"><div class="binding-title">Binding</div>No site details returned by TargetScan for this allele.</div>`;
+                return '<div class="binding-block"><div class="binding-title">Binding</div>No site details returned by TargetScan for this allele.</div>';
             }
 
-            return `
-                <div class="binding-columns">
-                    <div class="binding-block">
-                        <div class="binding-title">Ref binding</div>
-                        SiteType: ${escapeHtml(ref.siteType)}
-                        <div class="pairing-view">${buildPairingDiffHtml(ref, alt)}</div>
-                    </div>
-                    <div class="binding-block">
-                        <div class="binding-title">Alt binding</div>
-                        SiteType: ${escapeHtml(alt.siteType)}
-                        <div class="pairing-view">${buildPairingDiffHtml(alt, ref)}</div>
-                    </div>
-                </div>
-            `;
+            return '<div class="binding-columns">' +
+                '<div class="binding-block">' +
+                    '<div class="binding-title">REF Binding \u2014 ' + escapeHtml(ref.siteType) + '</div>' +
+                    renderDuplexView(ref, mirna.ref_overlaps_snp) +
+                '</div>' +
+                '<div class="binding-block">' +
+                    '<div class="binding-title">ALT Binding \u2014 ' + escapeHtml(alt.siteType) + '</div>' +
+                    renderDuplexView(alt, mirna.alt_overlaps_snp) +
+                '</div>' +
+            '</div>';
         }
 
-        function buildPairingDiffHtml(primary, other) {
-            const pMirna = normalizeForCompare(primary.mirnaSeq);
-            const pPair = normalizeForCompare(primary.pairing);
-            const pUtr = normalizeForCompare(primary.utrRegion);
+        function renderDuplexView(data, overlapsSnp) {
+            var mirna = normalizeForCompare(data.mirnaSeq) || 'NA';
+            var pairing = normalizeForCompare(data.pairing) || 'NA';
+            var utr = normalizeForCompare(data.utrRegion) || 'NA';
 
-            const oMirna = normalizeForCompare(other.mirnaSeq);
-            const oPair = normalizeForCompare(other.pairing);
-            const oUtr = normalizeForCompare(other.utrRegion);
+            // Build colored duplex: highlight mismatches
+            var line1 = '', line2 = '', line3 = '';
+            var maxLen = Math.max(mirna.length, pairing.length, utr.length);
 
-            const line1 = diffLineHtml('miRNA 3\' ', pMirna || 'NA', oMirna || 'NA');
-            const line2 = diffLineHtml('         ', pPair || 'NA', oPair || 'NA');
-            const line3 = diffLineHtml('UTR   5\' ', pUtr || 'NA', oUtr || 'NA');
+            for (var i = 0; i < maxLen; i++) {
+                var m = mirna[i] || ' ';
+                var p = pairing[i] || ' ';
+                var u = utr[i] || ' ';
 
-            return `${line1}<br>${line2}<br>${line3}`;
+                var isMismatch = p === ' ' || p === '.' || p === 'x';
+                var isMatch = p === '|' || p === ':';
+
+                if (isMismatch && m !== ' ' && u !== ' ') {
+                    line1 += '<span class="snp-highlight">' + escapeHtml(m) + '</span>';
+                    line2 += '<span style="color:#dc2626">' + escapeHtml(p) + '</span>';
+                    line3 += '<span class="snp-highlight">' + escapeHtml(u) + '</span>';
+                } else {
+                    line1 += escapeHtml(m);
+                    line2 += isMatch ? '<span style="color:#16a34a">' + escapeHtml(p) + '</span>' : escapeHtml(p);
+                    line3 += escapeHtml(u);
+                }
+            }
+
+            var overlapBadge = overlapsSnp ? ' <span class="badge badge-pathogenic" style="font-size:0.7em;padding:1px 6px;">SNP overlaps</span>' : '';
+
+            return '<div class="pairing-view">miRNA  3\u2032 ' + line1 + '\n           ' + line2 + '\nUTR    5\u2032 ' + line3 + '</div>' + overlapBadge;
         }
 
-        function diffLineHtml(prefix, a, b) {
-            return `${escapeHtml(prefix)}${escapeHtml(a)}`;
-        }
-
+        // -- Utility functions --
         function hasBindingDifference(mirna) {
-            const refSite = normalizeForCompare(mirna.ref_site_type || '');
-            const altSite = normalizeForCompare(mirna.alt_site_type || '');
-            const refMiR = normalizeForCompare(mirna.ref_mature_mirna_sequence || '');
-            const altMiR = normalizeForCompare(mirna.alt_mature_mirna_sequence || '');
-            const refPair = normalizeForCompare(mirna.ref_pairing || '');
-            const altPair = normalizeForCompare(mirna.alt_pairing || '');
-            const refUtr = normalizeForCompare(mirna.ref_utr_region || '');
-            const altUtr = normalizeForCompare(mirna.alt_utr_region || '');
-
-            return refSite !== altSite || refMiR !== altMiR || refPair !== altPair || refUtr !== altUtr;
+            return normalizeForCompare(mirna.ref_site_type || '') !== normalizeForCompare(mirna.alt_site_type || '') ||
+                   normalizeForCompare(mirna.ref_mature_mirna_sequence || '') !== normalizeForCompare(mirna.alt_mature_mirna_sequence || '') ||
+                   normalizeForCompare(mirna.ref_pairing || '') !== normalizeForCompare(mirna.alt_pairing || '') ||
+                   normalizeForCompare(mirna.ref_utr_region || '') !== normalizeForCompare(mirna.alt_utr_region || '');
         }
 
         function normalizeForCompare(value) {
@@ -896,39 +1221,79 @@
                 .replace(/"/g, '&quot;')
                 .replace(/'/g, '&#39;');
         }
-        
+
         function showError(msg) {
-            const el = document.getElementById('errorMsg');
-            el.innerHTML = `${escapeHtml(msg)}<button class="error-close" type="button" onclick="clearError()" title="Dismiss">&times;</button>`;
+            var el = document.getElementById('errorMsg');
+            el.innerHTML = escapeHtml(msg) + '<button class="error-close" type="button" onclick="clearError()" title="Dismiss">&times;</button>';
             el.style.display = 'block';
         }
 
         function clearError() {
-            const el = document.getElementById('errorMsg');
+            var el = document.getElementById('errorMsg');
             el.innerHTML = '';
             el.style.display = 'none';
         }
-        
-        function showLoading(show) {
-            document.getElementById('loading').style.display = show ? 'block' : 'none';
-            if (show) {
+
+        function showLoading(show, message) {
+            if (show) loadingCount++;
+            else loadingCount = Math.max(0, loadingCount - 1);
+
+            var bar = document.getElementById('progressBar');
+            var msgEl = document.getElementById('progressMsg');
+            var elapsedEl = document.getElementById('progressElapsed');
+            var fill = document.getElementById('progressFill');
+
+            if (loadingCount > 0) {
                 clearError();
+                if (message) msgEl.textContent = message;
+                bar.classList.add('visible');
+                fill.style.width = '70%';
+                if (!loadingTimerInterval) {
+                    var startTime = Date.now();
+                    elapsedEl.textContent = '0s';
+                    loadingTimerInterval = setInterval(function() {
+                        elapsedEl.textContent = Math.floor((Date.now() - startTime) / 1000) + 's';
+                    }, 1000);
+                }
+            } else {
+                fill.style.width = '100%';
+                setTimeout(function() { bar.classList.remove('visible'); fill.style.width = '0%'; }, 500);
+                if (loadingTimerInterval) { clearInterval(loadingTimerInterval); loadingTimerInterval = null; }
             }
         }
 
+        function toggleHelp(open) {
+            document.getElementById('helpOverlay').classList.toggle('open', open);
+        }
 
+        function downloadResults(fmt) {
+            if (!currentComparisonData) { alert('Run an analysis first.'); return; }
+            var payload = JSON.parse(JSON.stringify(currentComparisonData));
+            payload.format = fmt;
+            fetch('/api/export-results', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(payload)
+            }).then(function(resp) {
+                if (!resp.ok) throw new Error('Export failed');
+                var cd = resp.headers.get('Content-Disposition') || '';
+                var fname = 'targetsnap_results.' + fmt;
+                var m = cd.match(/filename=([^;]+)/);
+                if (m) fname = m[1];
+                return resp.blob().then(function(blob) { return {blob: blob, fname: fname}; });
+            }).then(function(o) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(o.blob);
+                a.download = o.fname;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(a.href);
+            }).catch(function(err) { alert('Download error: ' + err.message); });
+        }
 
-
-        
-        document.getElementById('rsInput').addEventListener('keypress', function(e) {
-            if (e.key === 'Enter') searchSNP();
-        });
-
-        document.getElementById('changedOnlyToggle').addEventListener('change', function() {
-            renderMiRNASections();
-        });
-
-
+        document.getElementById('rsInput').addEventListener('keypress', function(e) { if (e.key === 'Enter') searchSNP(); });
+        document.getElementById('changedOnlyToggle').addEventListener('change', function() { renderMiRNASections(); });
     </script>
 </body>
 </html>
